@@ -3,19 +3,18 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
-
+#
 typedef struct Game{
     int height, width;
-    int numColors;
+    int numColors;de
     StepGraph board;
     
 };
 
 typedef struct Board
-{
-    int height, width;
+{   
+    int lines, columns;
     int **fields;
-    int h;
 };
 
 typedef struct Step
@@ -24,7 +23,8 @@ typedef struct Step
     Step* prevStep;
     Step** nextSteps;
     int colorStep;
-    int spentStep;
+    int f, g, h;
+
 };
 
 typedef struct StepGraph{
@@ -34,7 +34,7 @@ typedef struct StepGraph{
 
 typedef struct Neighbor
 {
-    bool *color;
+    int *color;
     int size;
 };
 
