@@ -3,7 +3,11 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
-#
+
+#define bool int
+#define false 0
+#define true !false
+
 typedef struct Game{
     int height, width;
     int numColors;de
@@ -34,11 +38,12 @@ typedef struct StepGraph{
 
 typedef struct Neighbor
 {
-    int *color;
+    int searchColor;
+    bool *color;
     int size;
 };
 
-cvoid expandNode(Step);
+void expandNode(Step);
 int colorsCalculator(Board* b);
 int neighborCalculator(Board* b);
 int h(Board b);
