@@ -47,13 +47,14 @@ typedef struct StepQueue
 void expandNode(Step *step, int gameColors, StepQueue *q);
 void enqueueStep(Step *step, StepQueue* q);
 void dequeueStep(Step *step, StepQueue* q);
-void freeBoard(Board *b);
 
+void freeBoard(Board *b);
+void freeMatrix(void** m, int lines );
 //Find result
 int colorsCalculator(Board *b, int gameColors);
 int neighborCalculator(Board *b, int numColors);
 void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **checkedField);
-int h(Board *b);
+int h(Board *b, int numColors, int currentNumColors);
 int *callback(Step *finalStep);
 
 #endif

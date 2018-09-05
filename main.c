@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include "flooditAi.h"
+#include "./flooditAi.h"
 
 /* Mesmas funções utilizadas no exemplo do professor, 
 * apenas algumas adaptações para utilizar as funções e estruturas criadas para a solução
