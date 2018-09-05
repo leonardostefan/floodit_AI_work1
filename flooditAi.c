@@ -235,14 +235,16 @@ void enqueueStep(Step *step, StepQueue *q)
 }
 void dequeueStep(Step *step, StepQueue *q)
 {
-    if (q->size != 0)
+    if (q->size >1 )
     {
         step = q->first->value;
         q->first = q->first->next;
         q->size--;
     }
-    else
+    else{
+        if
         step = NULL;
+    }
 }
 
 void freeBoard(Board *b){

@@ -1,4 +1,4 @@
-FLAGS=-O3  -Wall  -lm 
+FLAGS=   -Wall  -lm -O3 -g
 CXX=gcc
 
 RM=rm -f
@@ -9,14 +9,14 @@ MAIN= main
 
 
  
-$(MAIN):  $(AI).o $(MAIN).o
-	$(CXX) $(FLAGS) $(MAIN).o $(AI).o  -o $(MAIN)
+$(MAIN):  $(AI).o $(MAIN).o  Makefile
+	$(CXX) $(MAIN).o $(AI).o  -o $(MAIN) $(FLAGS)
 
-$(MAIN).o: $(MAIN).c $(AI).c
-	$(CXX) $(FLAGS) -c $(MAIN).c  
+$(MAIN).o: $(MAIN).c $(AI).c Makefile
+	$(CXX)  -c $(MAIN).c   $(FLAGS)
 
-$(AI).o: $(AI).c
-	$(CXX) $(FLAGS) -c $(AI).c 
+$(AI).o: $(AI).c Makefile
+	$(CXX) -c $(AI).c  $(FLAGS)  
 
 clean:
 		echo "Limpando..."

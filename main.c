@@ -71,7 +71,7 @@ void mostra_mapa_cor(Board* b, int numColors)
         mostra_mapa(b, numColors);
         return;
     }
-    printf("%d %d %d\n", b->lines, b->columns, numColors);
+    printf("\n%d %d %d\n", b->lines, b->columns, numColors);
     for (i = 0; i < b->lines; i++)
     {
         for (j = 0; j < b->columns; j++)
@@ -119,10 +119,10 @@ int main(int argc, char **argv)
 
     Board firstBoard;
     int numColors;
-    if (argc != 0)
+    if (argc != 1)
     {
 
-        if ((argc < 3 || argc > 3))
+        if ((argc < 4 || argc > 4))
         {
             printf("uso: %s <numero_de_linhas> <numero_de_colunas> <numero_de_cores> ", argv[0]);
             exit(1);
@@ -133,22 +133,28 @@ int main(int argc, char **argv)
         numColors = atoi(argv[3]);
         createBoard(&firstBoard, numColors);
     }else{
-    loadBoard(&firstBoard, &numColors);
+        loadBoard(&firstBoard, &numColors);
     }
 
     mostra_mapa_cor(&firstBoard, numColors);
 
-    int cor = 1;
-    while (cor > 0 && cor <= numColors && parada > 1)
-    {
-        scanf("%d", &cor);
-        pinta_mapa(&firstBoard, numColors, cor);
-        mostra_mapa_cor(&firstBoard, numColors); // para mostrar sem cores use mostra_mapa(&firstBoard);
-        steps++;
-        parada = colorsCalculator(&firstBoard, numColors);
-    }
 
-    mostra_mapa_cor(&firstBoard, numColors); // para mostrar sem cores use mostra_mapa(&firstBoard);
+    StepQueue stepQueue;
+    stepQueue.size = 0;
+    Step firstStep;
+    firstStep.board = &firstBoard;
+    firstStep.prevStep= NULL;
+    enqueueStep( &firstStep,&stepQueue);
+    
+    Step* aux;
+    while (stepQueue.first->value->h !=0){
+        dequeueStep(aux, &stepQueue);
+        expandNode(aux, numColors, &stepQueue);
+    }
+    mostra_mapa_cor(aux->board,numColors);
+
+
+
     printf("\nnumero de passos: %d", steps);
 
     return 0;
