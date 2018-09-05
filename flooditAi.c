@@ -3,148 +3,238 @@
 #include <time.h>
 #include "flooditAi.h"
 
-void expandNode(Step *step, int gameColors)
-{
-    step->nextStep = calloc(gameColors, sizeof(Step *));
-    for (int i = 0; i < gameColors; i++)
-    {
-        if (i != step->colorStep)
-        {
-            step->nextStep[i] = calloc(1, sizeof(Step *));
-            step->nextStep[i]->board = paint(step->board, i);
-            step->nextStep[i]->g = step->g + 1;
-            step->nextStep[i]->h = h(step->nextStep[i]->board);
-            step->nextStep[i]->f = step->nextStep[i]->g + step->nextStep[i]->h;
-        }
-    }
-}
-Board *paint(Board *b, color);
+#define DEBUG 1
 
+
+
+void pinta(Board *b, int l, int c, int fundo, int cor)
+{
+    b->fields[l][c] = cor;
+    if (l < b->lines - 1 && b->fields[l + 1][c] == fundo)
+        pinta(b, l + 1, c, fundo, cor);
+    if (l < b->lines - 1 && c < b->columns - 1 && b->fields[l + 1][c + 1] == fundo)
+        pinta(b, l + 1, c + 1, fundo, cor);
+    if (c < b->columns - 1 && b->fields[l][c + 1] == fundo)
+        pinta(b, l, c + 1, fundo, cor);
+    if (l > 0 && c < b->columns - 1 && b->fields[l - 1][c + 1] == fundo)
+        pinta(b, l - 1, c + 1, fundo, cor);
+    if (l > 0 && b->fields[l - 1][c] == fundo)
+        pinta(b, l - 1, c, fundo, cor);
+    if (l > 0 && c > 0 && b->fields[l - 1][c - 1] == fundo)
+        pinta(b, l - 1, c - 1, fundo, cor);
+    if (c > 0 && b->fields[l][c - 1] == fundo)
+        pinta(b, l, c - 1, fundo, cor);
+    if (l < b->lines - 1 && c > 0 && b->fields[l + 1][c - 1] == fundo)
+        pinta(b, l + 1, c - 1, fundo, cor);
+}
+
+Board* pinta_mapa(Board *b, int cor)
+{
+    Board *newBoard = calloc(1, sizeof(Board));
+    newBoard->columns = b->columns;
+    newBoard->lines = b->lines;
+
+    newBoard->fields = (int **)malloc(b->lines * sizeof(int *));
+    for (int i = 0; i < b->lines; i++)
+    {
+        newBoard->fields[i] = (int *)malloc(b->columns * sizeof(int));
+        for (int j = 0; j < b->columns; j++)
+            newBoard->fields[i][j] = b->fields[i][j];
+    }
+    if (cor == b->fields[0][0])
+        return;
+    pinta(b, 0, 0, newBoard->fields[0][0], cor);
+    return newBoard;
+}
+
+//Heuristc
 int colorsCalculator(Board *b, int gameColors)
 {
     int *colors = calloc(gameColors, sizeof(int));
     for (int i = 0; i < b->lines; i++)
     {
-        for (int j = 0; j < m->columns; j++)
+        for (int j = 0; j < b->columns; j++)
         {
-            colors[b->field[i][j]] = 1;
+            colors[b->fields[i][j]] = 1;
             return 0;
         }
     }
     int r;
     for (int i = 0; i < gameColors; i++)
     {
-        if (colors[i] != 0) r++;
+        if (colors[i] != 0)
+            r++;
     }
 
     return r;
 }
 
+inline Neighbor *takeNeighbors(Board *b, int line, int column, bool **checkedField, int numColors)
+{
+    boolVector *colors = calloc(numColors, sizeof(boolVector));
 
+    Neighbor *neighbor = calloc(1, sizeof(Neighbor));
+    neighbor->color = colors;
+    neighbor->searchColor = b->fields[line][column];
 
-inline Neighbor* takeNeighbors( Board *b, int line,int column, bool** checkedField, int numColors){
-    bool* colors = calloc(numColors,sizeof (bool) );
-    
-    Neighbor neighbor= calloc(1, sizeof(Neighbor));
-    neighbor->color= colors;
-    neighbor->searchColor=b->field[line][column];
-    if (checkedField[line][column]!=0){
-        searchField(neighbor,b,line,column,checkedField);
-    }     
-    neighbor->size=0
-    for (int i = 0; i < numColors; ++i)
+    if (checkedField[line][column] != 0)
     {
-        if (neighbor->color[i]){
-            (neighbor->size)++;
-        }
+        searchField(neighbor, b, line, column, checkedField);
     }
+
     return neighbor;
 }
 
-void searchField(Neighbor* neighbor, Board* b, int line,int column, bool** checkedField){
-    if(neighbor->searchColor == b->field[line][column]){
-        if(!checkedField[line][column]){
-            checkedField[line][column]= true;
-            if (i!=0 && (i!=b->lines-1) &&  j!=0 && (j!= b->column-1)){
-               searchField(neighbor,b, line-1,column-1,checkedField);
-               searchField(neighbor,b, line-1,column,checkedField);
-               searchField(neighbor,b, line-1,column+1,checkedField);
-               searchField(neighbor,b, line,column-1,checkedField);
-               searchField(neighbor,b, line,column+1,checkedField);
-               searchField(neighbor,b, line+1,column-1,checkedField);
-               searchField(neighbor,b, line+1,column,checkedField);
-               searchField(neighbor,b, line+1,column+1,checkedField);
-           }
-             //TODO: tratar laterais 
-       }
-   }else{
-     neighbor->color[b->field[line][column]]=true;
- }
-}
-
-int neighborCalculator(int line,int column, Board *b, int numColors)
+void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **checkedField)
 {
-//TODO
-    bool** checkedField
+    if (neighbor->searchColor == b->fields[line][column])
+    {
+        if (!checkedField[line][column])
+        {
+            checkedField[line][column] = true;
 
-    checkedField = calloc(b->lines, bool*);
-    for (int i = 0; i< b->columns;i++){
-        checkedField[i]= calloc(b->columns, bool);
-    }
-    Neighbor* neighbors;
-
-    for (int i =0 ;i< b->columns; i++){
-        for (int j =0 ;j< b->columns; j++){
-            if (!checkedField[i][j]){
-
-
-
-
-
-
-
+            for (int i = -1; i < 2; i++)
+            {
+                if ((line + i >= 0) && (line + i <= b->lines))
+                    for (int j = -1; j < 2; j++)
+                    {
+                        if ((column + j >= 0) && (column + j <= b->columns))
+                        {
+                            searchField(neighbor, b, line + i, column + j, checkedField);
+                        }
+                    }
             }
         }
     }
+    else
+    {
 
-
-
-
-
+        boolVector colorBit = 1 << (b->fields[line][column]);
+        (neighbor->color) = (neighbor->color) | colorBit;
+    }
 }
 
-int h(Board b);
-
-int main(int argc, char **argv)
+int neighborCalculator(Board *b, int numColors)
 {
-    int color;
-    tmapa m;
-    int semente;
+    //TODO
+    bool **checkedField;
 
-    if (argc < 4 || argc > 5)
+    checkedField = calloc(b->lines, sizeof(bool));
+    for (int i = 0; i < b->columns; i++)
     {
-        printf("uso: %s <numero_de_linhas> <numero_de_colunas> <numero_de_cores> [<semente_aleatoria>]\n", argv[0]);
-        exit(1);
+        checkedField[i] = calloc(b->columns, sizeof(bool));
     }
+    Neighbor **neighbors = calloc(1, sizeof(Neighbor *));
+    int neighborsAmount = 0;
 
-    m.nlinhas = atoi(argv[1]);
-    m.ncolunas = atoi(argv[2]);
-    m.ncores = atoi(argv[3]);
-
-    if (argc == 5)
-        semente = atoi(argv[4]);
+    for (int i = 0; i < b->columns; i++)
+    {
+        for (int j = 0; j < b->columns; j++)
+        {
+            if (!checkedField[i][j])
+            {
+                neighbors[neighborsAmount] = takeNeighbors(b, i, j, checkedField, numColors);
+                neighborsAmount++;
+                neighbors = realloc(neighbors, (neighborsAmount + 1) * sizeof(Neighbor *));
+            }
+        }
+    }
+    int result = 0;
+    for (int i = 0; i < neighborsAmount; i++)
+    {
+        bool isSubSet = false;
+        for (int j = 0; (j < neighborsAmount) && !isSubSet; j++)
+        {
+            boolVector colorUnion = neighbors[i]->color | neighbors[j]->color;
+            if ((colorUnion == neighbors[j]->color))
+            {
+                isSubSet = true;
+            }
+        }
+        if (!isSubSet)
+            result++;
+    }
+    return (result - 1);
+}
+inline int max(int a, int b)
+{
+    if (a > b)
+        return a;
     else
-        semente = -1;
-    gera_mapa(&m, semente);
-    mostra_mapa_cor(&m);
-
-    scanf("%d", &cor);
-    while (cor > 0 && cor <= m.ncores)
+        return b;
+}
+int h(Board *b, int numColors, int currentNumColors)
+{
+    int n = neighborCalculator(b, numColors);
+    max(n, currentNumColors - 1);
+}
+//Structures
+void expandNode(Step *step, int gameColors, StepQueue *q)
+{
+    Step **nextSteps = calloc(gameColors, sizeof(Step *));
+    for (int i = 0; i < gameColors; i++)
     {
-        pinta_mapa(&m, cor);
-        mostra_mapa_cor(&m); // para mostrar sem cores use mostra_mapa(&m);
-        scanf("%d", &cor);
+        if (i != step->colorStep)
+        {
+            nextSteps[i] = calloc(1, sizeof(Step));
+            nextSteps[i]->board = pinta_mapa(step->board, i);
+            nextSteps[i]->prevStep = step;
+            nextSteps[i]->colorStep = i;
+            nextSteps[i]->g = step->g++;
+            nextSteps[i]->h = h(nextSteps[i]->board, gameColors, colorsCalculator(nextSteps[i]->board, gameColors));
+            nextSteps[i]->f = nextSteps[i]->g + nextSteps[i]->h;
+            enqueueStep(nextSteps[i], q);
+        }
     }
+    freeBoard(step->board);
+}
+void enqueueStep(Step *step, StepQueue *q)
+{
+    int weight = step->f;
+    QueueNode *newNode = calloc(1, sizeof(QueueNode));
+    newNode->value = step;
+    if (q->size > 0)
 
-    return 0;
+    {
+        if (q->first->value->f <= weight)
+        {
+            if (q->last->value->f <= weight)
+            {
+                q->last->next = newNode;
+                q->last = newNode;
+                q->size++;
+            }
+            else
+            {
+                bool enqueued;
+                for (QueueNode *node = q->first->next; (node->next->next != NULL) && !enqueued; node = node->next)
+                {
+                    if ((node->value->f < weight) && (node->next->value->f > weight))
+                    {
+                        QueueNode *aux = node->next;
+                        node->next = newNode;
+                        newNode->next = aux;
+                        q->size++;
+                    }
+                }
+            }
+        }
+        else
+        {
+            newNode->next = q->first;
+            q->first = newNode;
+            q->size++;
+        }
+    }
+}
+dequeueStep(Step *step, StepQueue *q)
+{
+    if (q->size != 0)
+    {
+        step = q->first->value;
+        q->first = q->first->next;
+        q->size--;
+    }
+    else
+        step = NULL;
 }
