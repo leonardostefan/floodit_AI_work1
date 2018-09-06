@@ -46,7 +46,7 @@ typedef struct StepQueue
 //Structures manipulation
 void expandNode(Step *step, int gameColors, StepQueue *q);
 void enqueueStep(Step *step, StepQueue* q);
-void dequeueStep(Step *step, StepQueue* q);
+Step* dequeueStep(StepQueue* q);
 
 void freeBoard(Board *b);
 void freeMatrix(void** m, int lines );

@@ -4,8 +4,12 @@
 #include "flooditAi.h"
 
 #define DEBUG 1
+#define inlineF
 
-
+//*Globais para testes
+bool admissivel = true;
+bool consistente = true;
+//
 
 void paint(Board *b, int l, int c, int currentColor, int nextColor)
 {
@@ -28,8 +32,10 @@ void paint(Board *b, int l, int c, int currentColor, int nextColor)
         paint(b, l + 1, c - 1, currentColor, nextColor);
 }
 
-Board* paint_board(Board *b, int nextColor)
+Board *paint_board(Board *b, int nextColor)
 {
+    if (nextColor == b->fields[0][0])
+        return NULL;
     Board *newBoard = calloc(1, sizeof(Board));
     newBoard->columns = b->columns;
     newBoard->lines = b->lines;
@@ -41,9 +47,7 @@ Board* paint_board(Board *b, int nextColor)
         for (int j = 0; j < b->columns; j++)
             newBoard->fields[i][j] = b->fields[i][j];
     }
-    if (nextColor == b->fields[0][0])
-        return newBoard;
-    paint(b, 0, 0, newBoard->fields[0][0], nextColor);
+    paint(newBoard, 0, 0, newBoard->fields[0][0], nextColor);
     return newBoard;
 }
 
@@ -55,11 +59,10 @@ int colorsCalculator(Board *b, int gameColors)
     {
         for (int j = 0; j < b->columns; j++)
         {
-            colors[b->fields[i][j]] = 1;
-            return 0;
+            colors[b->fields[i][j] - 1] = 1;
         }
     }
-    int r;
+    int r = 0;
     for (int i = 0; i < gameColors; i++)
     {
         if (colors[i] != 0)
@@ -70,7 +73,7 @@ int colorsCalculator(Board *b, int gameColors)
     return r;
 }
 
-inline Neighbor *takeNeighbors(Board *b, int line, int column, bool **checkedField, int numColors)
+inlineF Neighbor *takeNeighbors(Board *b, int line, int column, bool **checkedField, int numColors)
 {
 
     Neighbor *neighbor = calloc(1, sizeof(Neighbor));
@@ -107,14 +110,13 @@ void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **chec
                 }
             }
         }
-        else
-        {
-            boolVector colorBit = 1 << (b->fields[line][column]);
-            (neighbor->color) = (neighbor->color) | colorBit;
-        }
+    }
+    else
+    {
+        boolVector colorBit = 1 << (b->fields[line][column]);
+        (neighbor->color) = (neighbor->color) | colorBit;
     }
 }
-
 
 int neighborCalculator(Board *b, int numColors)
 {
@@ -157,11 +159,11 @@ int neighborCalculator(Board *b, int numColors)
             result++;
     }
     freeMatrix(neighbors, 1);
-    freeMatrix(checkedField,b->lines);
+    freeMatrix(checkedField, b->lines);
     return (result - 1);
 }
 
-inline int max(int a, int b)
+inlineF int max(int a, int b)
 {
     if (a > b)
         return a;
@@ -170,9 +172,20 @@ inline int max(int a, int b)
 }
 int h(Board *b, int numColors, int currentNumColors)
 {
-    int n = neighborCalculator(b, numColors);
-    return max(n, currentNumColors - 1);
-
+    int n = 0; //neighborCalculator(b, numColors);
+    int c = currentNumColors - 1;
+    return max(n, c);
+}
+int *callback(Step *finalStep)
+{
+    
+    int *result = calloc(finalStep->f+1, sizeof(int));
+    Step* aux=finalStep;
+    for(int i=finalStep->f-1; aux->prevStep!=NULL ; i--){
+        result[i]=aux->colorStep;
+        aux= aux->prevStep;
+    }
+    return result;
 }
 //Structures
 void expandNode(Step *step, int gameColors, StepQueue *q)
@@ -180,13 +193,14 @@ void expandNode(Step *step, int gameColors, StepQueue *q)
     Step **nextSteps = calloc(gameColors, sizeof(Step *));
     for (int i = 0; i < gameColors; i++)
     {
-        if (i != step->colorStep)
+        int colorStep = i + 1;
+        if (colorStep != step->colorStep)
         {
             nextSteps[i] = calloc(1, sizeof(Step));
-            nextSteps[i]->board = paint_board(step->board, i);
+            nextSteps[i]->board = paint_board(step->board, colorStep);
             nextSteps[i]->prevStep = step;
-            nextSteps[i]->colorStep = i;
-            nextSteps[i]->g = step->g++;
+            nextSteps[i]->colorStep = colorStep;
+            nextSteps[i]->g = step->g + 1;
             nextSteps[i]->h = h(nextSteps[i]->board, gameColors, colorsCalculator(nextSteps[i]->board, gameColors));
             nextSteps[i]->f = nextSteps[i]->g + nextSteps[i]->h;
             enqueueStep(nextSteps[i], q);
@@ -200,7 +214,6 @@ void enqueueStep(Step *step, StepQueue *q)
     QueueNode *newNode = calloc(1, sizeof(QueueNode));
     newNode->value = step;
     if (q->size > 0)
-
     {
         if (q->first->value->f <= weight)
         {
@@ -232,28 +245,49 @@ void enqueueStep(Step *step, StepQueue *q)
             q->size++;
         }
     }
-}
-void dequeueStep(Step *step, StepQueue *q)
-{
-    if (q->size >1 )
+    else
     {
-        step = q->first->value;
+        q->first = newNode;
+        q->last = newNode;
+        q->size++;
+    }
+}
+Step *dequeueStep(StepQueue *q)
+{
+    Step *result;
+    if (q->size > 1)
+    {
+        result = q->first->value;
         q->first = q->first->next;
         q->size--;
+
+        return result;
     }
-    else{
-        if
-        step = NULL;
+    else
+    {
+        if (q->size == 1)
+        {
+            result = q->first->value;
+            q->first = NULL;
+            q->last = NULL;
+            q->size--;
+
+            return result;
+        }
+        return NULL;
     }
 }
 
-void freeBoard(Board *b){
-    freeMatrix(b->fields, b->lines);
-    free(b);
+void freeBoard(Board *b)
+{
+    // freeMatrix(b->fields, b->lines);
+    // free(b);
 }
-void freeMatrix(void** m, int lines){
-    for(int i =0; i<lines;i++){
-        free(m[i]);
-    }
-    free(m);
+void freeMatrix(void **m, int lines)
+{
+    // for (int i = 0; i < lines; i++)
+    // {
+    //     free(m[i]);
+    // }
+    // free(m);
 }

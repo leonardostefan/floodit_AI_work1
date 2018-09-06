@@ -117,7 +117,7 @@ int main(int argc, char **argv)
     int steps = 0;
     int parada = 3;
 
-    Board firstBoard;
+    Board* firstBoard= calloc(1, sizeof(Board));
     int numColors;
     if (argc != 1)
     {
@@ -128,34 +128,50 @@ int main(int argc, char **argv)
             exit(1);
         }
 
-        firstBoard.lines = atoi(argv[1]);
-        firstBoard.columns = atoi(argv[2]);
+        firstBoard->lines = atoi(argv[1]);
+        firstBoard->columns = atoi(argv[2]);
         numColors = atoi(argv[3]);
-        createBoard(&firstBoard, numColors);
+        createBoard(firstBoard, numColors);
     }else{
-        loadBoard(&firstBoard, &numColors);
+        loadBoard(firstBoard, &numColors);
     }
 
-    mostra_mapa_cor(&firstBoard, numColors);
+    mostra_mapa_cor(firstBoard, numColors);
 
 
-    StepQueue stepQueue;
-    stepQueue.size = 0;
-    Step firstStep;
-    firstStep.board = &firstBoard;
-    firstStep.prevStep= NULL;
-    enqueueStep( &firstStep,&stepQueue);
+    StepQueue* stepQueue= calloc(1, sizeof(StepQueue));
+    stepQueue->size = 0;
+    Step* firstStep= calloc (1, sizeof(Step));
+    firstStep->board = firstBoard;
+    firstStep->prevStep= NULL;
+    firstStep->h=1;
+    firstStep->colorStep= (firstStep->board->fields)[0][0];
+    enqueueStep( firstStep,stepQueue);
     
-    Step* aux;
-    while (stepQueue.first->value->h !=0){
-        dequeueStep(aux, &stepQueue);
-        expandNode(aux, numColors, &stepQueue);
+    Step* aux= dequeueStep( stepQueue);;
+    int tester =0; 
+    char c;
+    while (aux->h > 0){
+        tester++;
+        printf("%d ", tester);
+        if(tester%100==0){
+             mostra_mapa_cor((aux)->board,numColors);
+            //  scanf("%c",&c);
+        }
+        expandNode(aux, numColors, stepQueue);
+        aux = dequeueStep( stepQueue);
+
     }
-    mostra_mapa_cor(aux->board,numColors);
+    mostra_mapa_cor((aux)->board,numColors);
+
+    int* result = callback(aux);
 
 
+    printf("\nnumero de passos: %d\n", aux->f);
+    for (int i=0; i < aux->f; i++){
+        printf("%d ",result[i]);
+    }
 
-    printf("\nnumero de passos: %d", steps);
-
+    mostra_mapa_cor(firstBoard, numColors);
     return 0;
 }
