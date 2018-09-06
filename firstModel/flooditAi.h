@@ -4,49 +4,31 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define bitColor long int
+#define boolVector long int
 #define bool char
 #define false 0
 #define true !false
 
-#define empty 0 
-#define toBitColor(A) 1<<A;;
-
-
-typedef struct BoardNode
+typedef struct Board
 {
-    bitColor color;
-    BoardNode **neighbors;
-    int neighborsSize;
-} BoardNode;
-
- 
-typedef struct NodeList
-{
-    int size;
-    BoardListNode* first;       
-} NodeList;
-
-typedef struct BoardListNode
-    struct BoardListNode *next;
-    BoardNode* value;
-}BoardListNode;
-
+    int lines, columns;
+    int **fields;
+} Board;
 
 typedef struct Step
 {
-    BoardList *board;
+    Board *board;
     struct Step *prevStep;
     struct Step **nextSteps;
     int colorStep;
     int f, g, h;
 } Step;
 
-// typedef struct Neighbor
-// {
-//     int searchColor;
-//     boolVector color;
-// } Neighbor;
+typedef struct Neighbor
+{
+    int searchColor;
+    boolVector color;
+} Neighbor;
 
 typedef struct QueueNode
 {
@@ -66,11 +48,11 @@ void expandNode(Step *step, int gameColors, StepQueue *q);
 void enqueueStep(Step *step, StepQueue* q);
 Step* dequeueStep(StepQueue* q);
 
-void freeBoard(BoardList *b);
+void freeBoard(Board *b);
 void freeMatrix(void** m, int lines );
 //Find result
-int colorsCalculator(BoardList *b, int gameColors);
-int neighborCalculator(BoardList *b, int numColors);
+int colorsCalculator(Board *b, int gameColors);
+int neighborCalculator(Board *b, int numColors);
 void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **checkedField);
 int h(Board *b, int numColors, int currentNumColors);
 int *callback(Step *finalStep);

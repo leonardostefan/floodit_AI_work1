@@ -52,57 +52,116 @@ Board *paint_board(Board *b, int nextColor)
 }
 
 //Heuristc
-int colorsCalculator(NodeList *b, int gameColors)
+int colorsCalculator(Board *b, int gameColors)
 {
-    bitColor* colors= calloc (1, sizeof(colors));
-    colors[1]=  takeNeighbors(b->first);
-    int colorGroups =1;
-    if(b->first->next!=NULL){
-        for (BoardListNode i =b->first->next; i->next!=NULL;  i= i->next){
-            bitColor newColors= takeNeighbors(i);
-            bool insert =true
-            for(int j = 0 ; j<colorGroups; j++){
-                if((colors[j]|newColors)==color[j]){
-                    insert=false;
-                    break;
-                }else{
-                    if((colors[j]|newColors)==newColors){
-                        insert=false;
-                        colors[j]=newColors;
-                        break;
+    int *colors = calloc(gameColors, sizeof(int));
+    for (int i = 0; i < b->lines; i++)
+    {
+        for (int j = 0; j < b->columns; j++)
+        {
+            colors[b->fields[i][j] - 1] = 1;
+        }
+    }
+    int r = 0;
+    for (int i = 0; i < gameColors; i++)
+    {
+        if (colors[i] != 0)
+            r++;
+    }
+
+    free(colors);
+    return r;
+}
+
+inlineF Neighbor *takeNeighbors(Board *b, int line, int column, bool **checkedField, int numColors)
+{
+
+    Neighbor *neighbor = calloc(1, sizeof(Neighbor));
+    neighbor->color = false;
+    neighbor->searchColor = b->fields[line][column];
+
+    if (checkedField[line][column] == 0)
+    {
+        searchField(neighbor, b, line, column, checkedField);
+    }
+
+    return neighbor;
+}
+
+void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **checkedField)
+{
+    if (neighbor->searchColor == b->fields[line][column])
+    {
+        if (!checkedField[line][column])
+        {
+            checkedField[line][column] = true;
+
+            for (int i = -1; i < 2; i++)
+            {
+                if ((line + i >= 0) && (line + i <= b->lines))
+                {
+                    for (int j = -1; j < 2; j++)
+                    {
+                        if ((column + j >= 0) && (column + j <= b->columns))
+                        {
+                            searchField(neighbor, b, line + i, column + j, checkedField);
+                        }
                     }
                 }
             }
-            if(insert){
-                colorGroups++;
-                colors= realloc(colors, colorGroups* sizeof (bitColor));
-                colors[colorGroups-1]= newColors;
-            }
-        }   
+        }
     }
-// TODO free colors, free bitColor
-
-    return colorGroups;
-
+    else
+    {
+        boolVector colorBit = 1 << (b->fields[line][column]);
+        (neighbor->color) = (neighbor->color) | colorBit;
+    }
 }
 
-inlineF bitColor takeNeighbors(BoardNode *node)
+int neighborCalculator(Board *b, int numColors)
 {
-    BoardNode* auxNode= b->first;
-    bitColor colors = false;   
-    for (int i =0;i< node->neighborsSize; i++){
-       colors= colors|node->neighbors[i];
-   }
-   return colors;
-}
+    //TODO free  Neighbor **neighbors
+    bool **checkedField;
 
-else
-{
-    boolVector colorBit = 1 << (b->fields[line][column]);
-    (neighbor->color) = (neighbor->color) | colorBit;
-}
-}
+    checkedField = calloc(b->lines+1, sizeof(bool));
+    for (int i = 0; i < b->columns; i++)
+    {
+        checkedField[i] = calloc(b->columns+1, sizeof(bool));
+    }
+    Neighbor **neighbors = calloc(1, sizeof(Neighbor *));
+    int neighborsAmount = 0;
 
+    for (int i = 0; i < b->columns; i++)
+    {
+        for (int j = 0; j < b->columns; j++)
+        {
+            if (!checkedField[i][j])
+            {
+                neighbors[neighborsAmount] = takeNeighbors(b, i, j, checkedField, numColors);
+                neighborsAmount++;
+                neighbors = realloc(neighbors, (neighborsAmount + 1) * sizeof(Neighbor *));
+            }
+        }
+    }
+    int result = 0;
+    for (int i = 0; i < neighborsAmount; i++)
+    {
+        bool isSubSet = false;
+        for (int j = 0; (j < neighborsAmount) && !isSubSet; j++)
+        {
+            boolVector colorUnion = neighbors[i]->color | neighbors[j]->color;
+            if ((colorUnion == neighbors[j]->color))
+            {
+                isSubSet = true;
+            }
+        }
+        if (!isSubSet)
+            result++;
+    }
+    freeMatrix(neighbors, 1);
+    freeMatrix(checkedField, b->lines);
+    return (result - 1);
+}
 
 inlineF int max(int a, int b)
 {
@@ -113,13 +172,13 @@ inlineF int max(int a, int b)
 }
 int h(Board *b, int numColors, int currentNumColors)
 {
-    int n =colorsCalculator(b, numColors);
+    int n =neighborCalculator(b, numColors);
     int c = currentNumColors - 1;
     return max(n, c);
 }
 int *callback(Step *finalStep)
 {
-
+    
     int *result = calloc(finalStep->f+1, sizeof(int));
     Step* aux=finalStep;
     for(int i=finalStep->f-1; aux->prevStep!=NULL ; i--){
