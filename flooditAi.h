@@ -9,33 +9,33 @@
 #define false 0
 #define true !false
 
-#define empty 0 
-#define toBitColor(A) 1<<A;;
+#define empty 0
+#define toBitColor(A) \
+    1 << A;           \
+    ;
 
-
-typedef struct BoardNode
+typedef struct FieldNode
 {
     bitColor color;
-    BoardNode **neighbors;
+    struct FieldNode **neighbors;
     int neighborsSize;
-} BoardNode;
+} FieldNode;
 
- 
-typedef struct NodeList
+typedef struct FieldListNode
+{
+    struct FieldListNode *next;
+    FieldNode *value;
+} FieldListNode;
+
+typedef struct FieldList
 {
     int size;
-    BoardListNode* first;       
-} NodeList;
-
-typedef struct BoardListNode
-    struct BoardListNode *next;
-    BoardNode* value;
-}BoardListNode;
-
+    FieldListNode *first;
+} FieldList;
 
 typedef struct Step
 {
-    BoardList *board;
+    FieldList *board;
     struct Step *prevStep;
     struct Step **nextSteps;
     int colorStep;
@@ -50,7 +50,7 @@ typedef struct Step
 
 typedef struct QueueNode
 {
-   struct QueueNode *next;
+    struct QueueNode *next;
     Step *value;
 } QueueNode;
 
@@ -63,16 +63,16 @@ typedef struct StepQueue
 
 //Structures manipulation
 void expandNode(Step *step, int gameColors, StepQueue *q);
-void enqueueStep(Step *step, StepQueue* q);
-Step* dequeueStep(StepQueue* q);
+void enqueueStep(Step *step, StepQueue *q);
+Step *dequeueStep(StepQueue *q);
 
-void freeBoard(BoardList *b);
-void freeMatrix(void** m, int lines );
-//Find result
-int colorsCalculator(BoardList *b, int gameColors);
-int neighborCalculator(BoardList *b, int numColors);
-void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **checkedField);
-int h(Board *b, int numColors, int currentNumColors);
-int *callback(Step *finalStep);
+// void freeBoard(BoardList *b);
+// void freeMatrix(void **m, int lines);
+// //Find result
+// int colorsCalculator(BoardList *b, int gameColors);
+// int neighborCalculator(BoardList *b, int numColors);
+// void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **checkedField);
+// int h(Board *b, int numColors, int currentNumColors);
+// int *callback(Step *finalStep);
 
 #endif

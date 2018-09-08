@@ -5,126 +5,235 @@
 
 #define DEBUG 1
 #define inlineF
+#define MAX_AFFECT_NODE 4
 
 //*Globais para testes
 bool admissivel = true;
 bool consistente = true;
 //
 
-void paint(Board *b, int l, int c, int currentColor, int nextColor)
+//Function to paint the first field meging the neighbors of the affected nodes(and painted node) to a new root node
+FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, int totalNodes)
 {
-    b->fields[l][c] = nextColor;
-    if (l < b->lines - 1 && b->fields[l + 1][c] == currentColor)
-        paint(b, l + 1, c, currentColor, nextColor);
-    if (l < b->lines - 1 && c < b->columns - 1 && b->fields[l + 1][c + 1] == currentColor)
-        paint(b, l + 1, c + 1, currentColor, nextColor);
-    if (c < b->columns - 1 && b->fields[l][c + 1] == currentColor)
-        paint(b, l, c + 1, currentColor, nextColor);
-    if (l > 0 && c < b->columns - 1 && b->fields[l - 1][c + 1] == currentColor)
-        paint(b, l - 1, c + 1, currentColor, nextColor);
-    if (l > 0 && b->fields[l - 1][c] == currentColor)
-        paint(b, l - 1, c, currentColor, nextColor);
-    if (l > 0 && c > 0 && b->fields[l - 1][c - 1] == currentColor)
-        paint(b, l - 1, c - 1, currentColor, nextColor);
-    if (c > 0 && b->fields[l][c - 1] == currentColor)
-        paint(b, l, c - 1, currentColor, nextColor);
-    if (l < b->lines - 1 && c > 0 && b->fields[l + 1][c - 1] == currentColor)
-        paint(b, l + 1, c - 1, currentColor, nextColor);
+    FieldListNode *newRoot = calloc(1, sizeof(FieldListNode));
+    newRoot->value = calloc(1, sizeof(FieldNode));
+    newRoot->value->color = affectedNodes[0]->value->color;
+    newRoot->value->neighbors = totalNodes;
+    newRoot->value->neighbors = calloc(newRoot->value->neighborsSize, sizeof(FieldNode *));
+    int realSize = 0;
+    for (int i = 0; i < root->value->neighborsSize; i++)
+    {
+        bool isNotAffected = true;
+        for (int j = 0; isNotAffected && (j < MAX_AFFECT_NODE); j++)
+        {
+            if ((affectedNodes[j] != NULL) && (root->value->neighbors[i] == affectedNodes[j]))
+            {
+                isNotAffected = false;
+            }
+        }
+        if (isNotAffected)
+        {
+            newRoot->value->neighbors[realSize] = root->value->neighbors[i];
+            realSize++;
+        }
+    }
+    for (int i = 0; i < MAX_AFFECT_NODE; i++)
+    {
+        if (affectedNodes[i] != NULL)
+        {
+            for (int j = 0; j < affectedNodes[i]->value->neighborsSize; j++)
+            {
+                if (affectedNodes[i]->value->neighbors[j] != root->value)
+                {
+                    newRoot->value->neighbors[realSize] = affectedNodes[i]->value->neighbors[j];
+                    realSize++;
+                }
+            }
+        }
+    }
+    newRoot->value->neighbors = realloc(realSize, sizeof(FieldNode *));
+    newRoot->value->neighborsSize = realSize;
 }
 
-Board *paint_board(Board *b, int nextColor)
-{
-    if (nextColor == b->fields[0][0])
-        return NULL;
-    Board *newBoard = calloc(1, sizeof(Board));
-    newBoard->columns = b->columns;
-    newBoard->lines = b->lines;
+//Create and remap an new board field list
 
-    newBoard->fields = (int **)malloc(b->lines * sizeof(int *));
-    for (int i = 0; i < b->lines; i++)
+FieldList *paintBoard(FieldList *b, int nextColor)
+{
+
+    bitColor newColor = 1 << nextColor;
+    if (newColor == b->first->value->color)
+        return NULL;
+
+    bool changeBoard = false;
+
+    FieldListNode **affectedNodes = calloc(MAX_AFFECT_NODE, sizeof(FieldListNode *));
+    int affectedSize = 0;
+    for (int i = 0; i < b->first->value->neighborsSize; i++)
     {
-        newBoard->fields[i] = (int *)malloc(b->columns * sizeof(int));
-        for (int j = 0; j < b->columns; j++)
-            newBoard->fields[i][j] = b->fields[i][j];
+        if (b->first->value->neighbors[i]->color == newColor)
+        {
+            changeBoard = true;
+            affectedNodes[affectedSize] = b->first->value->neighbors[i];
+            affectedSize++;
+        }
     }
-    paint(newBoard, 0, 0, newBoard->fields[0][0], nextColor);
+    if (!changeBoard)
+    {
+        free(affectedNodes);
+        return NULL;
+    }
+    //Create nodes
+    FieldListNode ***nodePairs = calloc(2, sizeof(FieldListNode **));
+    FieldListNode *oldPairAux = b->first;
+    nodePairs[0][0] = oldPairAux;
+    nodePairs[1][0] = mergeNodes(oldPairAux, affectedNodes, b->size);
+    for (int i = 1; i < b->size; i++)
+    {
+        nodePairs[0][i] = oldPairAux;
+        oldPairAux = oldPairAux->next;
+
+        bool isNotAffected = true;
+        for (int j = 0; j < affectedSize; j++)
+        {
+            if (nodePairs[0][i] == affectedNodes[j])
+            {
+                isNotAffected = false;
+            }
+        }
+        if (isNotAffected)
+        {
+
+            nodePairs[1][i] = calloc(1, sizeof(FieldNode));
+            nodePairs[1][i]->value = calloc(1, sizeof(FieldNode));
+            nodePairs[1][i]->value->color = nodePairs[0][i]->value->color;
+        }
+        else
+        {
+            nodePairs[1][i] = nodePairs[1][0];
+        }
+    }
+    for (int i = 1; i < b->size; i++)
+    {
+        int newNeighborsSize = 0;
+        FieldNode **remappedNeighbors = calloc(nodePairs[1][i]->value->neighborsSize, sizeof(FieldNode));
+        for (int j = 0; j < nodePairs[0][i]->value->neighborsSize; j++)
+        {
+            bool haveRoot = false;
+            for (int k = 0; k < b->size; k++)
+            {
+                if (nodePairs[0][i]->value->neighbors[j] == nodePairs[0][k])
+                {
+                    if (nodePairs[1][i] != nodePairs[1][0])
+                    {
+                        remappedNeighbors[newNeighborsSize] = nodePairs[1][k];
+                    }
+                }
+            }
+        }
+    }
+
+    FieldList *newBoard = calloc(1, sizeof(FieldList));
+
     return newBoard;
 }
 
 //Heuristc
-int colorsCalculator(NodeList *b, int gameColors)
+
+bitColor takeNeighbors(FieldNode *node)
 {
-    bitColor* colors= calloc (1, sizeof(colors));
-    colors[1]=  takeNeighbors(b->first);
-    int colorGroups =1;
-    if(b->first->next!=NULL){
-        for (BoardListNode i =b->first->next; i->next!=NULL;  i= i->next){
-            bitColor newColors= takeNeighbors(i);
-            bool insert =true
-            for(int j = 0 ; j<colorGroups; j++){
-                if((colors[j]|newColors)==color[j]){
-                    insert=false;
+    bitColor colors = empty;
+    if (node != NULL)
+    {
+        for (int i = 0; i < node->neighborsSize; i++)
+        {
+            colors = colors | (node->neighbors)[i]->color;
+        }
+    }
+    else
+        colors = empty;
+    return colors;
+}
+int neighborsCalculator(FieldList *b, int gameColors)
+{
+    bitColor *colors = calloc(1, sizeof(colors));
+    colors[0] = takeNeighbors(b->first->value);
+    int colorGroups = 1;
+    if (b->first->next != NULL)
+    {
+        for (FieldListNode *i = (b->first->next); i->next != NULL; i = i->next)
+        {
+            bitColor newColors = takeNeighbors(i->value);
+            bool insert = true;
+            for (int j = 0; j < colorGroups; j++)
+            {
+                if ((colors[j] | newColors) == colors[j])
+                {
+                    insert = false;
                     break;
-                }else{
-                    if((colors[j]|newColors)==newColors){
-                        insert=false;
-                        colors[j]=newColors;
+                }
+                else
+                {
+                    if ((colors[j] | newColors) == newColors)
+                    {
+                        insert = false;
+                        colors[j] = newColors;
                         break;
                     }
                 }
             }
-            if(insert){
+            if (insert)
+            {
                 colorGroups++;
-                colors= realloc(colors, colorGroups* sizeof (bitColor));
-                colors[colorGroups-1]= newColors;
+                colors = realloc(colors, colorGroups * sizeof(bitColor));
+                colors[colorGroups - 1] = newColors;
             }
-        }   
+        }
     }
-// TODO free colors, free bitColor
+    // TODO free colors, free bitColor
 
     return colorGroups;
-
-}
-
-inlineF bitColor takeNeighbors(BoardNode *node)
-{
-    BoardNode* auxNode= b->first;
-    bitColor colors = false;   
-    for (int i =0;i< node->neighborsSize; i++){
-       colors= colors|node->neighbors[i];
-   }
-   return colors;
-}
-
-else
-{
-    boolVector colorBit = 1 << (b->fields[line][column]);
-    (neighbor->color) = (neighbor->color) | colorBit;
-}
 }
 
 
-inlineF int max(int a, int b)
+int max(int a, int b)
 {
     if (a > b)
         return a;
     else
         return b;
 }
-int h(Board *b, int numColors, int currentNumColors)
+int colorsCalculator(FieldList *fieldList, int gameColorsNumber)
 {
-    int n =colorsCalculator(b, numColors);
+    bitColor colors = empty;
+    for (FieldListNode *node = fieldList->first; node->next != NULL; node = node->next)
+    {
+        colors = colors | node->value->color;
+    }
+    int result = 0;
+    for (int i = 0; i < gameColorsNumber; i++)
+    {
+        if ((colors >> i) % 2)
+        {
+            result++;
+        }
+    }
+    return result;
+}
+int h(FieldListNode *b, int numColors, int currentNumColors)
+{
+    int n = neighborsCalculator(b, numColors);
     int c = currentNumColors - 1;
     return max(n, c);
 }
 int *callback(Step *finalStep)
 {
 
-    int *result = calloc(finalStep->f+1, sizeof(int));
-    Step* aux=finalStep;
-    for(int i=finalStep->f-1; aux->prevStep!=NULL ; i--){
-        result[i]=aux->colorStep;
-        aux= aux->prevStep;
+    int *result = calloc(finalStep->f + 1, sizeof(int));
+    Step *aux = finalStep;
+    for (int i = finalStep->f - 1; aux->prevStep != NULL; i--)
+    {
+        result[i] = aux->colorStep;
+        aux = aux->prevStep;
     }
     return result;
 }
@@ -138,13 +247,21 @@ void expandNode(Step *step, int gameColors, StepQueue *q)
         if (colorStep != step->colorStep)
         {
             nextSteps[i] = calloc(1, sizeof(Step));
-            nextSteps[i]->board = paint_board(step->board, colorStep);
-            nextSteps[i]->prevStep = step;
-            nextSteps[i]->colorStep = colorStep;
-            nextSteps[i]->g = step->g + 1;
-            nextSteps[i]->h = h(nextSteps[i]->board, gameColors, colorsCalculator(nextSteps[i]->board, gameColors));
-            nextSteps[i]->f = nextSteps[i]->g + nextSteps[i]->h;
-            enqueueStep(nextSteps[i], q);
+            FieldList *newBoard = paintBoard(step->board, colorStep);
+            if (newBoard->size < step->board->size)
+            {
+                nextSteps[i]->board = newBoard;
+                nextSteps[i]->prevStep = step;
+                nextSteps[i]->colorStep = colorStep;
+                nextSteps[i]->g = step->g + 1;
+                nextSteps[i]->h = h(nextSteps[i]->board, gameColors, colorsCalculator(nextSteps[i]->board, gameColors));
+                nextSteps[i]->f = nextSteps[i]->g + nextSteps[i]->h;
+                enqueueStep(nextSteps[i], q);
+            }
+            else
+            {
+                freeFieldList(); //TODO freeFieldList
+            }
         }
     }
     freeBoard(step->board);
@@ -217,18 +334,4 @@ Step *dequeueStep(StepQueue *q)
         }
         return NULL;
     }
-}
-
-void freeBoard(Board *b)
-{
-    // freeMatrix(b->fields, b->lines);
-    // free(b);
-}
-void freeMatrix(void **m, int lines)
-{
-    // for (int i = 0; i < lines; i++)
-    // {
-    //     free(m[i]);
-    // }
-    // free(m);
 }
