@@ -18,7 +18,7 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
     FieldListNode *newRoot = calloc(1, sizeof(FieldListNode));
     newRoot->value = calloc(1, sizeof(FieldNode));
     newRoot->value->color = affectedNodes[0]->value->color;
-    newRoot->value->neighbors = totalNodes;
+    newRoot->value->neighborsSize = totalNodes;
     newRoot->value->neighbors = calloc(newRoot->value->neighborsSize, sizeof(FieldNode *));
     int realSize = 0;
     for (int i = 0; i < root->value->neighborsSize; i++)
@@ -26,7 +26,7 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
         bool isNotAffected = true;
         for (int j = 0; isNotAffected && (j < MAX_AFFECT_NODE); j++)
         {
-            if ((affectedNodes[j] != NULL) && (root->value->neighbors[i] == affectedNodes[j]))
+            if ((affectedNodes[j] != NULL) && (root->value->neighbors[i] == affectedNodes[j]->value))
             {
                 isNotAffected = false;
             }
@@ -51,8 +51,10 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
             }
         }
     }
-    newRoot->value->neighbors = realloc(realSize, sizeof(FieldNode *));
+    newRoot->value->neighbors = realloc(newRoot->value->neighbors, realSize * sizeof(FieldNode *));
     newRoot->value->neighborsSize = realSize;
+
+    return newRoot;
 }
 
 //Create and remap an new board field list
@@ -72,9 +74,15 @@ FieldList *paintBoard(FieldList *b, int nextColor)
     {
         if (b->first->value->neighbors[i]->color == newColor)
         {
-            changeBoard = true;
-            affectedNodes[affectedSize] = b->first->value->neighbors[i];
-            affectedSize++;
+            for (FieldListNode *node = b->first; node->next != NULL; node = node->next)
+            {
+                if (node->value == b->first->value->neighbors[i])
+                {
+                    affectedNodes[affectedSize] = node;
+                    changeBoard = true;
+                    affectedSize++;
+                }
+            }
         }
     }
     if (!changeBoard)
@@ -115,21 +123,32 @@ FieldList *paintBoard(FieldList *b, int nextColor)
     for (int i = 1; i < b->size; i++)
     {
         int newNeighborsSize = 0;
-        FieldNode **remappedNeighbors = calloc(nodePairs[1][i]->value->neighborsSize, sizeof(FieldNode));
+        FieldNode **remappedNeighbors = calloc(nodePairs[0][i]->value->neighborsSize, sizeof(FieldNode));
         for (int j = 0; j < nodePairs[0][i]->value->neighborsSize; j++)
         {
             bool haveRoot = false;
             for (int k = 0; k < b->size; k++)
             {
-                if (nodePairs[0][i]->value->neighbors[j] == nodePairs[0][k])
+                if (nodePairs[0][i]->value->neighbors[j] == nodePairs[0][k]->value)
                 {
                     if (nodePairs[1][i] != nodePairs[1][0])
                     {
-                        remappedNeighbors[newNeighborsSize] = nodePairs[1][k];
+                        remappedNeighbors[newNeighborsSize] = nodePairs[1][k]->value;
+                        newNeighborsSize++;
+                    }
+                    else
+                    {
+                        if (!haveRoot)
+                        {
+                            remappedNeighbors[newNeighborsSize] = nodePairs[1][k]->value;
+                            newNeighborsSize++;
+                        }
                     }
                 }
             }
         }
+
+        nodePairs[1][i] = realloc(remappedNeighbors, newNeighborsSize * sizeof(FieldNode));
     }
 
     FieldList *newBoard = calloc(1, sizeof(FieldList));
@@ -194,7 +213,6 @@ int neighborsCalculator(FieldList *b, int gameColors)
     return colorGroups;
 }
 
-
 int max(int a, int b)
 {
     if (a > b)
@@ -219,7 +237,7 @@ int colorsCalculator(FieldList *fieldList, int gameColorsNumber)
     }
     return result;
 }
-int h(FieldListNode *b, int numColors, int currentNumColors)
+int h(FieldList *b, int numColors, int currentNumColors)
 {
     int n = neighborsCalculator(b, numColors);
     int c = currentNumColors - 1;
@@ -260,11 +278,11 @@ void expandNode(Step *step, int gameColors, StepQueue *q)
             }
             else
             {
-                freeFieldList(); //TODO freeFieldList
+                freeFieldList(newBoard); //TODO freeFieldList
             }
         }
     }
-    freeBoard(step->board);
+    freeFieldList(step->board);
 }
 void enqueueStep(Step *step, StepQueue *q)
 {
@@ -283,7 +301,7 @@ void enqueueStep(Step *step, StepQueue *q)
             }
             else
             {
-                bool enqueued;
+                bool enqueued = false;
                 for (QueueNode *node = q->first->next; (node->next->next != NULL) && !enqueued; node = node->next)
                 {
                     if ((node->value->f < weight) && (node->next->value->f > weight))
@@ -292,6 +310,7 @@ void enqueueStep(Step *step, StepQueue *q)
                         node->next = newNode;
                         newNode->next = aux;
                         q->size++;
+                        enqueued = true;
                     }
                 }
             }
@@ -333,5 +352,41 @@ Step *dequeueStep(StepQueue *q)
             return result;
         }
         return NULL;
+    }
+}
+FieldList* convertBoardToGraph(int **boartM)
+{
+ FieldList* convertedBoard= calloc(1, sizeOf(FieldList));
+ convertedBoard-
+}
+FieldNode** searchField(int line, int column,int prevColor, FieldNode ***checkedField)
+{
+    if (neighbor->searchColor == b->fields[line][column])
+    {
+        if (checkedField[line][column]!=NULL)
+        {
+            checkedField[line][column] = true;
+
+            int neighborSize=0;
+            for (int i = -1; i < 2; i++)
+            {
+                if ((line + i >= 0) && (line + i < b->lines))
+                {
+                    for (int j = -1; j < 2; j++)
+                    {
+                        if ((column + j >= 0) && (column + j < b->columns))
+                        {
+
+                            searchField(neighbor, b, line + i, column + j, checkedField);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        boolVector colorBit = 1 << (b->fields[line][column]);
+        (neighbor->color) = (neighbor->color) | colorBit;
     }
 }

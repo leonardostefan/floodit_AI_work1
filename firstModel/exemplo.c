@@ -144,25 +144,33 @@ int main(int argc, char **argv)
 {
     int cor;
     tmapa m;
-    int semente;
+    int semente = -1;
     int steps = 0;
-    int parada=0;
+    int parada = 0;
 
-    if (argc < 4 || argc > 5)
+    if ((argc < 4 || argc > 5) && argc != 1)
     {
         printf("uso: %s <numero_de_linhas> <numero_de_colunas> <numero_de_cores> [<semente_aleatoria>]\n", argv[0]);
         exit(1);
     }
-
-    m.nlinhas = atoi(argv[1]);
-    m.ncolunas = atoi(argv[2]);
-    m.ncores = atoi(argv[3]);
-
-    if (argc == 5)
-        semente = atoi(argv[4]);
     else
-        semente = -1;
-    gera_mapa(&m, semente);
+    {
+        if (argc == 1)
+        {
+            carrega_mapa(&m);
+        }
+        else
+        {
+            m.nlinhas = atoi(argv[1]);
+            m.ncolunas = atoi(argv[2]);
+            m.ncores = atoi(argv[3]);
+            if (argc == 5)
+                semente = atoi(argv[4]);
+            else
+                semente = -1;
+            gera_mapa(&m, semente);
+        }
+    }
     mostra_mapa_cor(&m);
     // for (int i = 0; i < min(m.ncolunas, m.nlinhas) && parada == 0; i++)
     // {
@@ -171,8 +179,8 @@ int main(int argc, char **argv)
     //     steps++;
     //     parada = condicaoDeParada(&m);
     // }
-    cor =1;
-    while (cor > 0 && cor <= m.ncores && parada==0)
+    cor = 1;
+    while (cor > 0 && cor <= m.ncores && parada == 0)
     {
         scanf("%d", &cor);
         pinta_mapa(&m, cor);

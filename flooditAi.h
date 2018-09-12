@@ -66,7 +66,7 @@ void expandNode(Step *step, int gameColors, StepQueue *q);
 void enqueueStep(Step *step, StepQueue *q);
 Step *dequeueStep(StepQueue *q);
 
-// void freeBoard(BoardList *b);
+void freeFieldList(FieldList *b);
 // void freeMatrix(void **m, int lines);
 // //Find result
 // int colorsCalculator(BoardList *b, int gameColors);

@@ -11,29 +11,49 @@ bool admissivel = true;
 bool consistente = true;
 //
 
-void paint(Board *b, int l, int c, int currentColor, int nextColor)
+bool paint(Board *b, int l, int c, int currentColor, int nextColor, bool **painted)
 {
+    bool hasChanges = false;
+    painted[l][c] = true;
     b->fields[l][c] = nextColor;
-    if (l < b->lines - 1 && b->fields[l + 1][c] == currentColor)
-        paint(b, l + 1, c, currentColor, nextColor);
-    if (l < b->lines - 1 && c < b->columns - 1 && b->fields[l + 1][c + 1] == currentColor)
-        paint(b, l + 1, c + 1, currentColor, nextColor);
-    if (c < b->columns - 1 && b->fields[l][c + 1] == currentColor)
-        paint(b, l, c + 1, currentColor, nextColor);
-    if (l > 0 && c < b->columns - 1 && b->fields[l - 1][c + 1] == currentColor)
-        paint(b, l - 1, c + 1, currentColor, nextColor);
-    if (l > 0 && b->fields[l - 1][c] == currentColor)
-        paint(b, l - 1, c, currentColor, nextColor);
-    if (l > 0 && c > 0 && b->fields[l - 1][c - 1] == currentColor)
-        paint(b, l - 1, c - 1, currentColor, nextColor);
-    if (c > 0 && b->fields[l][c - 1] == currentColor)
-        paint(b, l, c - 1, currentColor, nextColor);
-    if (l < b->lines - 1 && c > 0 && b->fields[l + 1][c - 1] == currentColor)
-        paint(b, l + 1, c - 1, currentColor, nextColor);
+
+    for (int i = 1; i >= -1; i--)
+    {
+        if ((l + i >= 0) && (l + i < b->lines))
+        {
+            for (int j = 1; j >= -1; j--)
+            {
+                if (((c + j >= 0) && (c + j < b->columns)) && !(j == 0 && i == 0))
+                {
+                    if (b->fields[l + i][c + j] == currentColor)
+                    {
+                        hasChanges = hasChanges || paint(b, l + i, c + j, currentColor, nextColor, painted);
+                    }
+                    if (b->fields[l + i][c + j] == nextColor && !painted[l + i][c + j])
+                    {
+                        hasChanges = true;
+                    }
+                }
+            }
+        }
+    }
+
+    return hasChanges;
 }
 
 Board *paint_board(Board *b, int nextColor)
 {
+    bool **painted;
+
+    painted = calloc(b->lines + 1, sizeof(bool *));
+    for (int i = 0; i < b->lines; i++)
+    {
+        painted[i] = calloc(b->columns + 1, sizeof(bool));
+        for (int j = 0; j < b->columns; j++)
+        {
+            painted[i][j] = false;
+        }
+    }
     if (nextColor == b->fields[0][0])
         return NULL;
     Board *newBoard = calloc(1, sizeof(Board));
@@ -47,8 +67,15 @@ Board *paint_board(Board *b, int nextColor)
         for (int j = 0; j < b->columns; j++)
             newBoard->fields[i][j] = b->fields[i][j];
     }
-    paint(newBoard, 0, 0, newBoard->fields[0][0], nextColor);
-    return newBoard;
+    bool hasChanges = paint(newBoard, 0, 0, newBoard->fields[0][0], nextColor, painted);
+    if (hasChanges)
+    {
+        return newBoard;
+    }
+    else
+    {
+        return NULL;
+    }
 }
 
 //Heuristc
@@ -79,7 +106,7 @@ inlineF Neighbor *takeNeighbors(Board *b, int line, int column, bool **checkedFi
     Neighbor *neighbor = calloc(1, sizeof(Neighbor));
     neighbor->color = false;
     neighbor->searchColor = b->fields[line][column];
-
+    neighbor->setCounted = false;
     if (checkedField[line][column] == 0)
     {
         searchField(neighbor, b, line, column, checkedField);
@@ -92,17 +119,17 @@ void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **chec
 {
     if (neighbor->searchColor == b->fields[line][column])
     {
-        if (!checkedField[line][column])
-        {
-            checkedField[line][column] = true;
+        checkedField[line][column] = true;
 
-            for (int i = -1; i < 2; i++)
+        for (int i = 1; i >= -1; i--)
+        {
+            if ((line + i >= 0) && (line + i < b->lines))
             {
-                if ((line + i >= 0) && (line + i <= b->lines))
+                for (int j = 1; j >= -1; j--)
                 {
-                    for (int j = -1; j < 2; j++)
+                    if (((column + j >= 0) && (column + j < b->columns)) && !(j == 0 && i == 0))
                     {
-                        if ((column + j >= 0) && (column + j <= b->columns))
+                        if (!checkedField[line + i][column + j])
                         {
                             searchField(neighbor, b, line + i, column + j, checkedField);
                         }
@@ -118,15 +145,19 @@ void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **chec
     }
 }
 
-int neighborCalculator(Board *b, int numColors)
+int neighborCalculator(Board *b, int numColors, int currentNumColors)
 {
     //TODO free  Neighbor **neighbors
     bool **checkedField;
 
-    checkedField = calloc(b->lines+1, sizeof(bool));
-    for (int i = 0; i < b->columns; i++)
+    checkedField = calloc(b->lines + 1, sizeof(bool *));
+    for (int i = 0; i < b->lines; i++)
     {
-        checkedField[i] = calloc(b->columns+1, sizeof(bool));
+        checkedField[i] = calloc(b->columns + 1, sizeof(bool));
+        for (int j = 0; j < b->columns; j++)
+        {
+            checkedField[i][j] = false;
+        }
     }
     Neighbor **neighbors = calloc(1, sizeof(Neighbor *));
     int neighborsAmount = 0;
@@ -147,20 +178,58 @@ int neighborCalculator(Board *b, int numColors)
     for (int i = 0; i < neighborsAmount; i++)
     {
         bool isSubSet = false;
+
         for (int j = 0; (j < neighborsAmount) && !isSubSet; j++)
         {
             boolVector colorUnion = neighbors[i]->color | neighbors[j]->color;
-            if ((colorUnion == neighbors[j]->color))
+
+            if ((colorUnion == neighbors[j]->color) && (neighbors[i]->color != neighbors[j]->color))
             {
                 isSubSet = true;
             }
+            else
+            {
+                if ((neighbors[i]->color == neighbors[j]->color) && (neighbors[i]->setCounted || neighbors[j]->setCounted))
+                {
+                    isSubSet = true;
+                }
+            }
         }
         if (!isSubSet)
+        {
             result++;
+            // boolVector actualSet = neighbors[i]->color;
+            // for (int i = 0; i < numColors + 2; i++)
+            // {
+            //     if (((actualSet >> i) % 2))
+            //     {
+            //         result++;
+            //     }
+            // }
+        }
+
+        neighbors[i]->setCounted = true;
     }
-    freeMatrix(neighbors, 1);
+    freeMatrix(neighbors, 1);    // boolVector rootColors = neighbors[0]->color;
+    // for (int i = 0; i < numColors + 2; i++)
+    // {
+    //     if (((rootColors >> i) % 2))
+    //     {
+    //         result--;
+    //     }
+    // }
     freeMatrix(checkedField, b->lines);
-    return (result - 1);
+
+    // boolVector rootColors = neighbors[0]->color;
+    // for (int i = 0; i < numColors + 2; i++)
+    // {
+    //     if (((rootColors >> i) % 2))
+    //     {
+    //         result--;
+    //     }
+    // }
+
+    return (result + currentNumColors -2);
 }
 
 inlineF int max(int a, int b)
@@ -172,18 +241,29 @@ inlineF int max(int a, int b)
 }
 int h(Board *b, int numColors, int currentNumColors)
 {
-    int n =neighborCalculator(b, numColors);
+    int n;
+    n = neighborCalculator(b, numColors, currentNumColors);
     int c = currentNumColors - 1;
-    return max(n, c);
+
+    IF_DEBUG
+    printf("\nn = %d\n", n);
+    printf("c = %d\n", c);
+    END_IF_DEBUG;
+    if(c==0 && n>0){
+        printf("ERRO, heuristica inadimissivel");
+        return 0;
+    }
+    return max(max(n, c), 0);
 }
 int *callback(Step *finalStep)
 {
-    
-    int *result = calloc(finalStep->f+1, sizeof(int));
-    Step* aux=finalStep;
-    for(int i=finalStep->f-1; aux->prevStep!=NULL ; i--){
-        result[i]=aux->colorStep;
-        aux= aux->prevStep;
+
+    int *result = calloc(finalStep->f + 1, sizeof(int));
+    Step *aux = finalStep;
+    for (int i = finalStep->f - 1; aux->prevStep != NULL; i--)
+    {
+        result[i] = aux->colorStep;
+        aux = aux->prevStep;
     }
     return result;
 }
@@ -197,13 +277,17 @@ void expandNode(Step *step, int gameColors, StepQueue *q)
         if (colorStep != step->colorStep)
         {
             nextSteps[i] = calloc(1, sizeof(Step));
-            nextSteps[i]->board = paint_board(step->board, colorStep);
-            nextSteps[i]->prevStep = step;
-            nextSteps[i]->colorStep = colorStep;
-            nextSteps[i]->g = step->g + 1;
-            nextSteps[i]->h = h(nextSteps[i]->board, gameColors, colorsCalculator(nextSteps[i]->board, gameColors));
-            nextSteps[i]->f = nextSteps[i]->g + nextSteps[i]->h;
-            enqueueStep(nextSteps[i], q);
+            Board *newBoard = paint_board(step->board, colorStep);
+            if (newBoard != NULL)
+            {
+                nextSteps[i]->board = newBoard;
+                nextSteps[i]->prevStep = step;
+                nextSteps[i]->colorStep = colorStep;
+                nextSteps[i]->g = step->g + 1;
+                nextSteps[i]->h = h(nextSteps[i]->board, gameColors, colorsCalculator(nextSteps[i]->board, gameColors));
+                nextSteps[i]->f = nextSteps[i]->g + nextSteps[i]->h;
+                enqueueStep(nextSteps[i], q);
+            }
         }
     }
     freeBoard(step->board);
@@ -226,7 +310,7 @@ void enqueueStep(Step *step, StepQueue *q)
             else
             {
                 bool enqueued;
-                for (QueueNode *node = q->first->next; (node->next->next != NULL) && !enqueued; node = node->next)
+                for (QueueNode *node = q->first->next; (node->next != NULL) && !enqueued; node = node->next)
                 {
                     if ((node->value->f < weight) && (node->next->value->f > weight))
                     {
@@ -280,8 +364,8 @@ Step *dequeueStep(StepQueue *q)
 
 void freeBoard(Board *b)
 {
-    // freeMatrix(b->fields, b->lines);
-    // free(b);
+    freeMatrix(b->fields, b->lines);
+    free(b);
 }
 void freeMatrix(void **m, int lines)
 {

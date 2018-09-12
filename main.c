@@ -7,8 +7,6 @@
 * apenas algumas adaptações para utilizar as funções e estruturas criadas para a solução
 */
 
-
-
 void createBoard(Board *b, int numColors)
 {
     int i, j;
@@ -115,6 +113,9 @@ void pinta_mapa(Board* b, int numColors, int cor)
 
 int main(int argc, char **argv)
 {
+    int num;
+    int steps = 0;
+    int parada = 3;
 
     Board* firstBoard= calloc(1, sizeof(Board));
     int numColors;
@@ -149,14 +150,13 @@ int main(int argc, char **argv)
     
     Step* aux= dequeueStep( stepQueue);;
     int tester =0; 
+    char c;
     while (aux->h > 0){
         tester++;
-        if(tester%1 == 0){
-             IF_DEBUG
-            //  scanf("%c",&c);
+        printf("%d ", tester);
+        if(tester%100==0){
              mostra_mapa_cor((aux)->board,numColors);
-            printf("%d",tester);
-            END_IF_DEBUG
+            //  scanf("%c",&c);
         }
         expandNode(aux, numColors, stepQueue);
         aux = dequeueStep( stepQueue);
@@ -172,6 +172,6 @@ int main(int argc, char **argv)
         printf("%d ",result[i]);
     }
 
-    // mostra_mapa_cor(firstBoard, numColors);
+    mostra_mapa_cor(firstBoard, numColors);
     return 0;
 }
