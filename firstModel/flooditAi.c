@@ -210,26 +210,10 @@ int neighborCalculator(Board *b, int numColors, int currentNumColors)
 
         neighbors[i]->setCounted = true;
     }
-    freeMatrix(neighbors, 1);    // boolVector rootColors = neighbors[0]->color;
-    // for (int i = 0; i < numColors + 2; i++)
-    // {
-    //     if (((rootColors >> i) % 2))
-    //     {
-    //         result--;
-    //     }
-    // }
+    freeMatrix(neighbors, 1);   
     freeMatrix(checkedField, b->lines);
 
-    // boolVector rootColors = neighbors[0]->color;
-    // for (int i = 0; i < numColors + 2; i++)
-    // {
-    //     if (((rootColors >> i) % 2))
-    //     {
-    //         result--;
-    //     }
-    // }
-
-    return (result + currentNumColors -2);
+    return (result  -1);
 }
 
 inlineF int max(int a, int b)
@@ -258,9 +242,9 @@ int h(Board *b, int numColors, int currentNumColors)
 int *callback(Step *finalStep)
 {
 
-    int *result = calloc(finalStep->f + 1, sizeof(int));
+    int *result = calloc(finalStep->g + 1, sizeof(int));
     Step *aux = finalStep;
-    for (int i = finalStep->f - 1; aux->prevStep != NULL; i--)
+    for (int i = finalStep->g - 1; aux->prevStep != NULL; i--)
     {
         result[i] = aux->colorStep;
         aux = aux->prevStep;

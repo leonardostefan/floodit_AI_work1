@@ -12,6 +12,8 @@ bool admissivel = true;
 bool consistente = true;
 //
 
+Board *initaMatrixBoard;
+
 //Function to paint the first field meging the neighbors of the affected nodes(and painted node) to a new root node
 FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, int totalNodes)
 {
@@ -266,7 +268,7 @@ void expandNode(Step *step, int gameColors, StepQueue *q)
         {
             nextSteps[i] = calloc(1, sizeof(Step));
             FieldList *newBoard = paintBoard(step->board, colorStep);
-            if (newBoard->size < step->board->size)
+            if (newBoard != NULL && (newBoard->size < step->board->size))
             {
                 nextSteps[i]->board = newBoard;
                 nextSteps[i]->prevStep = step;
@@ -354,39 +356,156 @@ Step *dequeueStep(StepQueue *q)
         return NULL;
     }
 }
-FieldList* convertBoardToGraph(int **boartM)
+FieldList *convertBoardToGraph(Board *boartM)
 {
- FieldList* convertedBoard= calloc(1, sizeOf(FieldList));
- convertedBoard-
-}
-FieldNode** searchField(int line, int column,int prevColor, FieldNode ***checkedField)
-{
-    if (neighbor->searchColor == b->fields[line][column])
+    initaMatrixBoard = boartM;
+
+    FieldList *convertedBoard = calloc(1, sizeof(FieldList));
+    FieldListNode *newNode = NULL;
+    FieldListNode *lastNode = NULL;
+    FieldNode ***nodeBoard;
+    nodeBoard = calloc(initaMatrixBoard->lines, sizeof(FieldNode **));
+    for (int i = 0; i < initaMatrixBoard->lines; i++)
     {
-        if (checkedField[line][column]!=NULL)
+        nodeBoard[i] = calloc(initaMatrixBoard->columns, sizeof(FieldNode *));
+    }
+
+    for (int i = 0; i < initaMatrixBoard->lines; i++)
+    {
+        for (int j = 0; j < initaMatrixBoard->columns; j++)
         {
-            checkedField[line][column] = true;
-
-            int neighborSize=0;
-            for (int i = -1; i < 2; i++)
+            if (nodeBoard[i][j] == NULL)
             {
-                if ((line + i >= 0) && (line + i < b->lines))
+                nodeBoard[i][j] = calloc(1, sizeof(FieldNode));
+                nodeBoard[i][j]->color = 1<< initaMatrixBoard->fields[i][j];
+                if (newNode == NULL)
                 {
-                    for (int j = -1; j < 2; j++)
-                    {
-                        if ((column + j >= 0) && (column + j < b->columns))
-                        {
+                    newNode = calloc(1, sizeof(FieldListNode));
+                    convertedBoard->first = newNode;
+                    convertedBoard->size = 1;
+                }
+                else
+                {
+                    newNode = calloc(1, sizeof(FieldListNode));
 
-                            searchField(neighbor, b, line + i, column + j, checkedField);
+                    lastNode->next = newNode;
+                    convertedBoard->size++;
+                }
+                newNode->value = nodeBoard[i][j];
+                lastNode = newNode;
+
+                for (int k = -1; k <= 1; k++)
+                {
+                    if ((i + k >= 0) && (i + k < initaMatrixBoard->lines))
+                    {
+                        for (int l = -1; l <= 1; l++)
+                        {
+                            if ((j + l >= 0) && (j + l < initaMatrixBoard->columns))
+                            {
+                                int lineR = i + k, colmunR = j + l;
+                                searchNodes(lineR, colmunR, nodeBoard[i][j], nodeBoard);
+                            }
                         }
                     }
                 }
             }
         }
     }
-    else
+
+    for (int i = 0; i < initaMatrixBoard->lines; i++)
     {
-        boolVector colorBit = 1 << (b->fields[line][column]);
-        (neighbor->color) = (neighbor->color) | colorBit;
+        for (int j = 0; j < initaMatrixBoard->columns; j++)
+        {
+
+            for (int k = -1; k <= 1; k++)
+            {
+                if ((i + k >= 0) && (i + k < initaMatrixBoard->lines))
+                {
+                    for (int l = -1; l <= 1; l++)
+                    {
+                        if ((j + l >= 0) && (j + l < initaMatrixBoard->columns))
+                        {
+
+                            linkNeighbors(nodeBoard[i][j], nodeBoard[i + k][j + l]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return convertedBoard;
+}
+void searchNodes(int line, int column, FieldNode *groupNode, FieldNode ***board)
+{
+    if (groupNode != NULL && board[line][column] == NULL)
+    {
+        if (groupNode->color == (1<<initaMatrixBoard->fields[line][column]))
+        {
+            board[line][column] = groupNode;
+
+            for (int i = -1; i <= 1; i++)
+            {
+                if ((line + i >= 0) && (line + i < initaMatrixBoard->lines))
+                {
+                    for (int j = -1; j <= 1; j++)
+                    {
+                        if ((column + j >= 0) && (column + j < initaMatrixBoard->columns))
+                        {
+
+                            searchNodes(line + i, column + j, groupNode, board);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode)
+{
+    if (toLinkNode != searchNode)
+    {
+        if (searchNode->neighbors != NULL)
+        {
+
+            bool inserted = false;
+            for (int i = searchNode->neighborsSize - 1; (i > -1) && (!inserted); i--)
+            {
+                if (searchNode->neighbors[i] == toLinkNode)
+                {
+                    inserted = true;
+                }
+            }
+
+            if (!inserted)
+            {
+                searchNode->neighborsSize++;
+                searchNode->neighbors = realloc(searchNode->neighbors, searchNode->neighborsSize * sizeof(FieldNode *));
+                searchNode->neighbors[searchNode->neighborsSize - 1] = toLinkNode;
+            }
+        }
+    }
+}
+
+void freeFieldList(FieldList *b)
+{
+    if (b != NULL)
+    {
+
+        if (b->first != NULL)
+        {
+            FieldListNode *lastNode = NULL;
+            for (FieldListNode *node = b->first; node->next != NULL; node = node->next)
+            {
+                if (lastNode != NULL)
+                {
+                    if (lastNode->value->neighbors != NULL)
+
+                        free(lastNode->value->neighbors);
+                    free(lastNode->value);
+                    free(lastNode);
+                }
+                lastNode = node;
+            }
+        }
     }
 }

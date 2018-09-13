@@ -142,10 +142,10 @@ int main(int argc, char **argv)
     StepQueue* stepQueue= calloc(1, sizeof(StepQueue));
     stepQueue->size = 0;
     Step* firstStep= calloc (1, sizeof(Step));
-    firstStep->board = firstBoard;
+    firstStep->board = convertBoardToGraph(firstBoard);
     firstStep->prevStep= NULL;
     firstStep->h=1;
-    firstStep->colorStep= (firstStep->board->fields)[0][0];
+    firstStep->colorStep= (firstBoard->fields)[0][0];
     enqueueStep( firstStep,stepQueue);
     
     Step* aux= dequeueStep( stepQueue);;
@@ -154,15 +154,11 @@ int main(int argc, char **argv)
     while (aux->h > 0){
         tester++;
         printf("%d ", tester);
-        if(tester%100==0){
-             mostra_mapa_cor((aux)->board,numColors);
-            //  scanf("%c",&c);
-        }
+
         expandNode(aux, numColors, stepQueue);
         aux = dequeueStep( stepQueue);
 
     }
-    mostra_mapa_cor((aux)->board,numColors);
 
     int* result = callback(aux);
 

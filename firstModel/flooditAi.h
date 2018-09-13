@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define IF_DEBUG if (0)          {
+#define IF_DEBUG if (1)          {
 #define END_IF_DEBUG }
 
 

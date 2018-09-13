@@ -149,11 +149,12 @@ int main(int argc, char **argv)
     
     Step* aux= dequeueStep( stepQueue);;
     int tester =0; 
+    char trash;
     while (aux->h > 0){
         tester++;
         if(tester%1 == 0){
              IF_DEBUG
-            //  scanf("%c",&c);
+             scanf("%c",&trash);
              mostra_mapa_cor((aux)->board,numColors);
             printf("%d",tester);
             END_IF_DEBUG
