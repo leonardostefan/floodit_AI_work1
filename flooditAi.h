@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define bitColor long int
+#define bitColor  unsigned  long
 #define bool char
 #define false 0
 #define true !false

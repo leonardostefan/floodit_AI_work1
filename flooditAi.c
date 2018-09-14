@@ -61,10 +61,10 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
 
 //Create and remap an new board field list
 
-FieldList *paintBoard(FieldList *b, int nextColor)
+FieldList *paintBoard(FieldList *b, bitColor nextColor)
 {
 
-    bitColor newColor = 1 << nextColor;
+    bitColor newColor = nextColor;
     if (newColor == b->first->value->color)
         return NULL;
 
@@ -377,7 +377,7 @@ FieldList *convertBoardToGraph(Board *boartM)
             if (nodeBoard[i][j] == NULL)
             {
                 nodeBoard[i][j] = calloc(1, sizeof(FieldNode));
-                nodeBoard[i][j]->color = 1<< initaMatrixBoard->fields[i][j];
+                nodeBoard[i][j]->color = 1 << initaMatrixBoard->fields[i][j];
                 if (newNode == NULL)
                 {
                     newNode = calloc(1, sizeof(FieldListNode));
@@ -425,7 +425,6 @@ FieldList *convertBoardToGraph(Board *boartM)
                     {
                         if ((j + l >= 0) && (j + l < initaMatrixBoard->columns))
                         {
-
                             linkNeighbors(nodeBoard[i][j], nodeBoard[i + k][j + l]);
                         }
                     }
@@ -439,7 +438,7 @@ void searchNodes(int line, int column, FieldNode *groupNode, FieldNode ***board)
 {
     if (groupNode != NULL && board[line][column] == NULL)
     {
-        if (groupNode->color == (1<<initaMatrixBoard->fields[line][column]))
+        if (groupNode->color == (1 << initaMatrixBoard->fields[line][column]))
         {
             board[line][column] = groupNode;
 
@@ -468,7 +467,7 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode)
         {
 
             bool inserted = false;
-            for (int i = searchNode->neighborsSize - 1; (i > -1) && (!inserted); i--)
+            for (int i = 0; (i < searchNode->neighborsSize) && (!inserted); i++)
             {
                 if (searchNode->neighbors[i] == toLinkNode)
                 {
@@ -482,6 +481,12 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode)
                 searchNode->neighbors = realloc(searchNode->neighbors, searchNode->neighborsSize * sizeof(FieldNode *));
                 searchNode->neighbors[searchNode->neighborsSize - 1] = toLinkNode;
             }
+        }
+        else
+        {
+            searchNode->neighborsSize = 1;
+            searchNode->neighbors = calloc(1, sizeof(FieldNode *));
+            searchNode->neighbors[0] = toLinkNode;
         }
     }
 }

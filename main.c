@@ -146,9 +146,8 @@ int main(int argc, char **argv)
     firstStep->prevStep= NULL;
     firstStep->h=1;
     firstStep->colorStep= (firstBoard->fields)[0][0];
-    enqueueStep( firstStep,stepQueue);
     
-    Step* aux= dequeueStep( stepQueue);;
+    Step* aux= firstStep;
     int tester =0; 
     char c;
     while (aux->h > 0){
