@@ -31,6 +31,7 @@ typedef struct FieldList
 {
     int size;
     FieldListNode *first;
+
 } FieldList;
 
 typedef struct Step
@@ -79,6 +80,10 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode);
 FieldList *convertBoardToGraph(Board *boartM);
 
 void freeFieldList(FieldList *b);
+
+
+int *callback(Step *finalStep);
+
 // void freeMatrix(void **m, int lines);
 // //Find result
 // int colorsCalculator(BoardList *b, int gameColors);

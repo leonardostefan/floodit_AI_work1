@@ -18,6 +18,7 @@ Board *initaMatrixBoard;
 FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, int totalNodes)
 {
     FieldListNode *newRoot = calloc(1, sizeof(FieldListNode));
+    newRoot->next=NULL;
     newRoot->value = calloc(1, sizeof(FieldNode));
     newRoot->value->color = affectedNodes[0]->value->color;
     newRoot->value->neighborsSize = totalNodes;
@@ -35,8 +36,19 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
         }
         if (isNotAffected)
         {
-            newRoot->value->neighbors[realSize] = root->value->neighbors[i];
-            realSize++;
+            bool contain = false;
+            for (int n = 0; n < realSize; n++)
+            {
+                if (root->value->neighbors[i] = newRoot->value->neighbors[n])
+                {
+                    contain = true;
+                }
+            }
+            if (!contain)
+            {
+                newRoot->value->neighbors[realSize] = root->value->neighbors[i];
+                realSize++;
+            }
         }
     }
     for (int i = 0; i < MAX_AFFECT_NODE; i++)
@@ -47,13 +59,24 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
             {
                 if (affectedNodes[i]->value->neighbors[j] != root->value)
                 {
-                    newRoot->value->neighbors[realSize] = affectedNodes[i]->value->neighbors[j];
-                    realSize++;
+                    bool contain = false;
+                    for (int n = 0; n < realSize; n++)
+                    {
+                        if ((root->value->neighbors)[i] = (newRoot->value->neighbors)[n])
+                        {
+                            contain = true;
+                        }
+                    }
+                    if (!contain)
+                    {
+                        (newRoot->value->neighbors)[realSize] = (root->value->neighbors)[i];
+                        realSize++;
+                    }
                 }
             }
         }
     }
-    newRoot->value->neighbors = realloc(newRoot->value->neighbors, realSize * sizeof(FieldNode *));
+    newRoot->value->neighbors = reallocarray(newRoot->value->neighbors, realSize , sizeof(FieldNode *));
     newRoot->value->neighborsSize = realSize;
 
     return newRoot;
@@ -61,10 +84,10 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
 
 //Create and remap an new board field list
 
-FieldList *paintBoard(FieldList *b, bitColor nextColor)
+FieldList *paintBoard(FieldList *b, int nextColor)
 {
 
-    bitColor newColor = nextColor;
+    bitColor newColor = (1 << nextColor);
     if (newColor == b->first->value->color)
         return NULL;
 
@@ -94,13 +117,15 @@ FieldList *paintBoard(FieldList *b, bitColor nextColor)
     }
     //Create nodes
     FieldListNode ***nodePairs = calloc(2, sizeof(FieldListNode **));
+    nodePairs[0] = calloc(b->size, sizeof(FieldListNode *));
+    nodePairs[1] = calloc(b->size, sizeof(FieldListNode *));
     FieldListNode *oldPairAux = b->first;
     nodePairs[0][0] = oldPairAux;
     nodePairs[1][0] = mergeNodes(oldPairAux, affectedNodes, b->size);
     for (int i = 1; i < b->size; i++)
     {
-        nodePairs[0][i] = oldPairAux;
         oldPairAux = oldPairAux->next;
+        nodePairs[0][i] = oldPairAux;
 
         bool isNotAffected = true;
         for (int j = 0; j < affectedSize; j++)
@@ -113,7 +138,8 @@ FieldList *paintBoard(FieldList *b, bitColor nextColor)
         if (isNotAffected)
         {
 
-            nodePairs[1][i] = calloc(1, sizeof(FieldNode));
+            nodePairs[1][i] = calloc(1, sizeof(FieldListNode));
+            nodePairs[1][i]->next=NULL;
             nodePairs[1][i]->value = calloc(1, sizeof(FieldNode));
             nodePairs[1][i]->value->color = nodePairs[0][i]->value->color;
         }
@@ -125,39 +151,52 @@ FieldList *paintBoard(FieldList *b, bitColor nextColor)
     for (int i = 1; i < b->size; i++)
     {
         int newNeighborsSize = 0;
-        FieldNode **remappedNeighbors = calloc(nodePairs[0][i]->value->neighborsSize, sizeof(FieldNode));
-        for (int j = 0; j < nodePairs[0][i]->value->neighborsSize; j++)
+        FieldNode **remappedNeighbors = calloc(nodePairs[0][i]->value->neighborsSize, sizeof(FieldNode*));
+        for (int neigh = 0; neigh < nodePairs[0][i]->value->neighborsSize; neigh++)
         {
             bool haveRoot = false;
-            for (int k = 0; k < b->size; k++)
+            for (int pairN = 0; pairN < b->size; pairN++)
             {
-                if (nodePairs[0][i]->value->neighbors[j] == nodePairs[0][k]->value)
+                if (nodePairs[0][i]->value->neighbors[neigh] == nodePairs[0][pairN]->value)
                 {
                     if (nodePairs[1][i] != nodePairs[1][0])
                     {
-                        remappedNeighbors[newNeighborsSize] = nodePairs[1][k]->value;
+                        remappedNeighbors[newNeighborsSize] = nodePairs[1][pairN]->value;
                         newNeighborsSize++;
                     }
                     else
                     {
                         if (!haveRoot)
                         {
-                            remappedNeighbors[newNeighborsSize] = nodePairs[1][k]->value;
+                            remappedNeighbors[newNeighborsSize] = nodePairs[1][pairN]->value;
                             newNeighborsSize++;
+                            haveRoot=true;
                         }
                     }
                 }
             }
         }
 
-        nodePairs[1][i] = realloc(remappedNeighbors, newNeighborsSize * sizeof(FieldNode));
+        nodePairs[1][i]->value->neighbors = reallocarray(remappedNeighbors, newNeighborsSize , sizeof(FieldNode));
     }
 
     FieldList *newBoard = calloc(1, sizeof(FieldList));
+    newBoard->first = nodePairs[1][0];
+    newBoard->size = 1;
+    for (int i = 1; i < b->size; i++)
+    {
+        if (nodePairs[1][i] != newBoard->first)
+        {
+            FieldListNode *last;
+            for (last = newBoard->first; last->next != NULL; last = last->next)
+                ;
+            last->next = nodePairs[1][i];
+            newBoard->size++;
+        }
 
-    return newBoard;
+    }
+        return newBoard;
 }
-
 //Heuristc
 
 bitColor takeNeighbors(FieldNode *node)
@@ -205,7 +244,7 @@ int neighborsCalculator(FieldList *b, int gameColors)
             if (insert)
             {
                 colorGroups++;
-                colors = realloc(colors, colorGroups * sizeof(bitColor));
+                colors = reallocarray(colors, colorGroups , sizeof(bitColor));
                 colors[colorGroups - 1] = newColors;
             }
         }
@@ -306,7 +345,7 @@ void enqueueStep(Step *step, StepQueue *q)
                 bool enqueued = false;
                 for (QueueNode *node = q->first->next; (node->next->next != NULL) && !enqueued; node = node->next)
                 {
-                    if ((node->value->f < weight) && (node->next->value->f > weight))
+                    if ((node->value->f <= weight) && (node->next->value->f > weight))
                     {
                         QueueNode *aux = node->next;
                         node->next = newNode;
@@ -352,8 +391,10 @@ Step *dequeueStep(StepQueue *q)
             q->size--;
 
             return result;
-        }
+        }else{
+
         return NULL;
+        }
     }
 }
 FieldList *convertBoardToGraph(Board *boartM)
@@ -381,6 +422,7 @@ FieldList *convertBoardToGraph(Board *boartM)
                 if (newNode == NULL)
                 {
                     newNode = calloc(1, sizeof(FieldListNode));
+                    newNode->next=NULL;
                     convertedBoard->first = newNode;
                     convertedBoard->size = 1;
                 }
@@ -478,7 +520,7 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode)
             if (!inserted)
             {
                 searchNode->neighborsSize++;
-                searchNode->neighbors = realloc(searchNode->neighbors, searchNode->neighborsSize * sizeof(FieldNode *));
+                searchNode->neighbors = reallocarray(searchNode->neighbors, searchNode->neighborsSize , sizeof(FieldNode *));
                 searchNode->neighbors[searchNode->neighborsSize - 1] = toLinkNode;
             }
         }
