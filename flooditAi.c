@@ -22,7 +22,7 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
     newRoot->value = calloc(1, sizeof(FieldNode));
     newRoot->value->color = affectedNodes[0]->value->color;
     newRoot->value->neighborsSize = totalNodes;
-    newRoot->value->neighbors = calloc(newRoot->value->neighborsSize, sizeof(FieldNode *));
+    FieldNode** newNeighbors=calloc(totalNodes, sizeof(FieldNode*));
     int realSize = 0;
     for (int i = 0; i < root->value->neighborsSize; i++)
     {
@@ -36,19 +36,10 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
         }
         if (isNotAffected)
         {
-            bool contain = false;
-            for (int n = 0; n < realSize; n++)
-            {
-                if (root->value->neighbors[i] = newRoot->value->neighbors[n])
-                {
-                    contain = true;
-                }
-            }
-            if (!contain)
-            {
-                newRoot->value->neighbors[realSize] = root->value->neighbors[i];
+       
+                newNeighbors[realSize] = root->value->neighbors[i];
                 realSize++;
-            }
+            
         }
     }
     for (int i = 0; i < MAX_AFFECT_NODE; i++)
@@ -62,21 +53,22 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
                     bool contain = false;
                     for (int n = 0; n < realSize; n++)
                     {
-                        if ((root->value->neighbors)[i] = (newRoot->value->neighbors)[n])
+                        if (affectedNodes[i]->value->neighbors[j] == newNeighbors[n])
                         {
                             contain = true;
                         }
                     }
                     if (!contain)
                     {
-                        (newRoot->value->neighbors)[realSize] = (root->value->neighbors)[i];
+                        newNeighbors[realSize] = affectedNodes[i]->value->neighbors[j];
                         realSize++;
                     }
                 }
             }
         }
     }
-    newRoot->value->neighbors = reallocarray(newRoot->value->neighbors, realSize , sizeof(FieldNode *));
+    // newNeighbors= reallocarray(newNeighbors, realSize , sizeof(FieldNode *));
+    newRoot->value->neighbors =newNeighbors;
     newRoot->value->neighborsSize = realSize;
 
     return newRoot;
@@ -112,7 +104,9 @@ FieldList *paintBoard(FieldList *b, int nextColor)
     }
     if (!changeBoard)
     {
-        free(affectedNodes);
+        if (affectedNodes!=NULL){
+            // free(affectedNodes);
+        }
         return NULL;
     }
     //Create nodes
@@ -148,36 +142,53 @@ FieldList *paintBoard(FieldList *b, int nextColor)
             nodePairs[1][i] = nodePairs[1][0];
         }
     }
+//Remmap new neighbors
+    for (int n =0; n< nodePairs[1][0]->value->neighborsSize; n++){
+        for (int p=0 ;p<b->size;p++){
+            if(nodePairs[1][0]->value->neighbors[n]==nodePairs[0][p]->value){
+                nodePairs[1][0]->value->neighbors[n]=nodePairs[1][p]->value;
+            }
+        }
+    }
+
+
+    
+    
     for (int i = 1; i < b->size; i++)
     {
-        int newNeighborsSize = 0;
-        FieldNode **remappedNeighbors = calloc(nodePairs[0][i]->value->neighborsSize, sizeof(FieldNode*));
-        for (int neigh = 0; neigh < nodePairs[0][i]->value->neighborsSize; neigh++)
-        {
-            bool haveRoot = false;
-            for (int pairN = 0; pairN < b->size; pairN++)
+        if (nodePairs[1][i] != nodePairs[1][0]){
+
+
+            int newNeighborsSize = 0;
+            FieldNode **remappedNeighbors = calloc(nodePairs[0][i]->value->neighborsSize, sizeof(FieldNode*));
+            for (int neigh = 0; neigh < nodePairs[0][i]->value->neighborsSize; neigh++)
             {
-                if (nodePairs[0][i]->value->neighbors[neigh] == nodePairs[0][pairN]->value)
+                bool haveRoot = false;
+                for (int pairN = 0; pairN < b->size; pairN++)
                 {
-                    if (nodePairs[1][i] != nodePairs[1][0])
+                    if (nodePairs[0][i]->value->neighbors[neigh] == nodePairs[0][pairN]->value)
                     {
-                        remappedNeighbors[newNeighborsSize] = nodePairs[1][pairN]->value;
-                        newNeighborsSize++;
-                    }
-                    else
-                    {
-                        if (!haveRoot)
+                        if (nodePairs[1][pairN] != nodePairs[1][0])
                         {
                             remappedNeighbors[newNeighborsSize] = nodePairs[1][pairN]->value;
                             newNeighborsSize++;
-                            haveRoot=true;
+                        }
+                        else
+                        {
+                            if (!haveRoot)
+                            {
+                                remappedNeighbors[newNeighborsSize] = nodePairs[1][0]->value;
+                                newNeighborsSize++;
+                                haveRoot=true;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        nodePairs[1][i]->value->neighbors = reallocarray(remappedNeighbors, newNeighborsSize , sizeof(FieldNode));
+            nodePairs[1][i]->value->neighbors = remappedNeighbors;
+            nodePairs[1][i]->value->neighborsSize=newNeighborsSize;
+        }
     }
 
     FieldList *newBoard = calloc(1, sizeof(FieldList));
@@ -244,7 +255,7 @@ int neighborsCalculator(FieldList *b, int gameColors)
             if (insert)
             {
                 colorGroups++;
-                colors = reallocarray(colors, colorGroups , sizeof(bitColor));
+                //colors = reallocarray(colors, colorGroups , sizeof(bitColor));
                 colors[colorGroups - 1] = newColors;
             }
         }
@@ -520,7 +531,7 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode)
             if (!inserted)
             {
                 searchNode->neighborsSize++;
-                searchNode->neighbors = reallocarray(searchNode->neighbors, searchNode->neighborsSize , sizeof(FieldNode *));
+                // searchNode->neighbors = reallocarray(searchNode->neighbors, searchNode->neighborsSize , sizeof(FieldNode *));
                 searchNode->neighbors[searchNode->neighborsSize - 1] = toLinkNode;
             }
         }
@@ -535,24 +546,24 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode)
 
 void freeFieldList(FieldList *b)
 {
-    if (b != NULL)
-    {
+    // if (b != NULL)
+    // {
 
-        if (b->first != NULL)
-        {
-            FieldListNode *lastNode = NULL;
-            for (FieldListNode *node = b->first; node->next != NULL; node = node->next)
-            {
-                if (lastNode != NULL)
-                {
-                    if (lastNode->value->neighbors != NULL)
+    //     if (b->first != NULL)
+    //     {
+    //         FieldListNode *lastNode = NULL;
+    //         for (FieldListNode *node = b->first; node->next != NULL; node = node->next)
+    //         {
+    //             if (lastNode != NULL)
+    //             {
+    //                 if (lastNode->value->neighbors != NULL)
 
-                        free(lastNode->value->neighbors);
-                    free(lastNode->value);
-                    free(lastNode);
-                }
-                lastNode = node;
-            }
-        }
-    }
+    //                     free(lastNode->value->neighbors);
+    //                 free(lastNode->value);
+    //                 free(lastNode);
+    //             }
+    //             lastNode = node;
+    //         }
+    //     }
+    // }
 }
