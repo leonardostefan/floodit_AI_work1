@@ -292,7 +292,7 @@ int colorsCalculator(FieldList *fieldList, int gameColorsNumber)
 }
 int h(FieldList *b, int numColors, int currentNumColors)
 {
-    int n = neighborsCalculator(b, numColors);
+    int n = 0;//neighborsCalculator(b, numColors);
     int c = currentNumColors - 1;
     return max(n, c);
 }
@@ -303,6 +303,7 @@ int *callback(Step *finalStep)
     Step *aux = finalStep;
     for (int i = finalStep->f - 1; aux->prevStep != NULL; i--)
     {
+        printf("CB: %d\n", aux->colorStep);
         result[i] = aux->colorStep;
         aux = aux->prevStep;
     }

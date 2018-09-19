@@ -146,6 +146,8 @@ int main(int argc, char **argv)
     printGraph(firstStep->board); 
     firstStep->prevStep= NULL;
     firstStep->h=1;
+    firstStep->f=1;
+    firstStep->g=1;
     firstStep->colorStep= (firstBoard->fields)[0][0];
     
     Step* aux= firstStep;
