@@ -143,6 +143,7 @@ int main(int argc, char **argv)
     stepQueue->size = 0;
     Step* firstStep= calloc (1, sizeof(Step));
     firstStep->board = convertBoardToGraph(firstBoard);
+    printGraph(firstStep->board); 
     firstStep->prevStep= NULL;
     firstStep->h=1;
     firstStep->colorStep= (firstBoard->fields)[0][0];

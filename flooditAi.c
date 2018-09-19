@@ -480,13 +480,16 @@ FieldList *convertBoardToGraph(Board *boartM)
                     {
                         if ((j + l >= 0) && (j + l < initaMatrixBoard->columns))
                         {
+                            printf("linkando: [%d][%d] [%d][%d] \n", i, j, i + k, j + l);
                             linkNeighbors(nodeBoard[i][j], nodeBoard[i + k][j + l]);
                         }
                     }
                 }
             }
+            printf("\n");
         }
     }
+    printNodeMatrix(nodeBoard);
     return convertedBoard;
 }
 void searchNodes(int line, int column, FieldNode *groupNode, FieldNode ***board)
@@ -535,13 +538,16 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode)
                 // searchNode->neighbors = reallocarray(searchNode->neighbors, searchNode->neighborsSize , sizeof(FieldNode *));
                 searchNode->neighbors[searchNode->neighborsSize] = toLinkNode;
                 searchNode->neighborsSize++;
+                printf("%p -> %p \n", searchNode, toLinkNode );
             }
         }
         else
         {
+            int size= initaMatrixBoard->columns*initaMatrixBoard->lines;
             searchNode->neighborsSize = 1;
-            searchNode->neighbors = calloc(1, sizeof(FieldNode *));
+            searchNode->neighbors = calloc(size, sizeof(FieldNode *));
             searchNode->neighbors[0] = toLinkNode;
+            printf("%p -> %p \n", searchNode, toLinkNode );
         }
     }
 }
@@ -568,4 +574,25 @@ void freeFieldList(FieldList *b)
     //         }
     //     }
     // }
+}
+void printGraph(FieldList *grafo){
+    FieldListNode *nodo = grafo->first;
+    while(nodo){
+        //printa
+        fprintf(stderr, "%p[%d]:", nodo->value, nodo->value->color);
+        for(int i = 0; i < nodo->value->neighborsSize; i++)
+            fprintf(stderr, " %p[%d]", nodo->value->neighbors[i], nodo->value->neighbors[i]->color);
+        nodo = nodo->next;
+        fprintf(stderr, "\n");
+    }
+    printf("IMPRESSO\n");
+}
+
+void printNodeMatrix(FieldNode ***board){
+    for (int i= 0; i< initaMatrixBoard->lines; i++){
+        for (int j= 0; j< initaMatrixBoard->columns; j++){
+           printf(" %p", board[i][j]);
+        } 
+        printf("\n");
+    }
 }
