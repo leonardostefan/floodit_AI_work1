@@ -22,7 +22,7 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
     newRoot->value = calloc(1, sizeof(FieldNode));
     newRoot->value->color = affectedNodes[0]->value->color;
     newRoot->value->neighborsSize = totalNodes;
-    FieldNode** newNeighbors=calloc(totalNodes, sizeof(FieldNode*));
+    FieldNode** newNeighbors=calloc(totalNodes+3, sizeof(FieldNode*));
     int realSize = 0;
     for (int i = 0; i < root->value->neighborsSize; i++)
     {
@@ -55,6 +55,7 @@ FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, in
                     {
                         if (affectedNodes[i]->value->neighbors[j] == newNeighbors[n])
                         {
+                            printf("node:%04X \n color: %d\n", newNeighbors[n], newNeighbors[n]->color );
                             contain = true;
                         }
                     }
@@ -430,6 +431,7 @@ FieldList *convertBoardToGraph(Board *boartM)
             {
                 nodeBoard[i][j] = calloc(1, sizeof(FieldNode));
                 nodeBoard[i][j]->color = 1 << initaMatrixBoard->fields[i][j];
+                nodeBoard[i][j]->neighbors=NULL;
                 if (newNode == NULL)
                 {
                     newNode = calloc(1, sizeof(FieldListNode));
@@ -530,9 +532,9 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode)
 
             if (!inserted)
             {
-                searchNode->neighborsSize++;
                 // searchNode->neighbors = reallocarray(searchNode->neighbors, searchNode->neighborsSize , sizeof(FieldNode *));
-                searchNode->neighbors[searchNode->neighborsSize - 1] = toLinkNode;
+                searchNode->neighbors[searchNode->neighborsSize] = toLinkNode;
+                searchNode->neighborsSize++;
             }
         }
         else
