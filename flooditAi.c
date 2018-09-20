@@ -300,16 +300,18 @@ int colorsCalculator(FieldList *fieldList, int gameColorsNumber)
 }
 int h(FieldList *b, int numColors)
 {
-    int size = b->size;
-    int n = 0; //= neighborsCalculator(b, numColors);
+    int size = b->size - 1;
+    int n = neighborsCalculator(b, numColors);
     int c = colorsCalculator(b, numColors) - 1;
 
+    if (c < 4)
+    {
+        return max(n, c);
+    }
+    else
+    {
         return (c);
-    // if (c > 4)
-    // {
-    //     return max(size, c);
-    // }else{
-    // }
+    }
 }
 int *callback(Step *finalStep)
 {
@@ -327,6 +329,7 @@ int *callback(Step *finalStep)
 void expandNode(Step *step, int gameColors, StepQueue *q)
 {
     Step *newStep;
+    bool isError = true;
     for (int i = 0; i < gameColors; i++)
     {
         int colorStep = i + 1;
@@ -337,24 +340,44 @@ void expandNode(Step *step, int gameColors, StepQueue *q)
             FieldList *newBoard = paintBoard(step->board, colorStep);
             if (newBoard != NULL && (newBoard->size < step->board->size))
             {
+
                 newStep->board = newBoard;
                 newStep->prevStep = step;
                 newStep->colorStep = colorStep;
                 newStep->g = step->g + 1;
                 newStep->h = h(newStep->board, gameColors);
                 newStep->f = newStep->g + newStep->h;
-                enqueueStep(newStep, q);
+                bool eq = enqueueStep(newStep, q);
+                if (eq == 0)
+                {
+                    breakDebug();
+                }
+                else
+                {
+                    isError = false;
+                }
+                if (eq == 1)
+                {
+                    breakDebug();
+                }
             }
             else
             {
+                if (newBoard != NULL && (newBoard->size >= step->board->size))
+                {
+                    breakDebug();
+                }
                 freeFieldList(newBoard); //TODO freeFieldList
             }
         }
     }
-
+    if (isError)
+    {
+        breakDebug();
+    }
     freeFieldList(step->board);
 }
-void enqueueStep(Step *step, StepQueue *q)
+bool enqueueStep(Step *step, StepQueue *q)
 {
     int weight = step->f;
     QueueNode *newNode = calloc(1, sizeof(QueueNode));
@@ -368,11 +391,11 @@ void enqueueStep(Step *step, StepQueue *q)
                 q->last->next = newNode;
                 q->last = newNode;
                 q->size++;
+                return 3;
             }
             else
             {
-                bool enqueued = false;
-                for (QueueNode *node = q->first; (node->next != NULL) && !enqueued; node = node->next)
+                for (QueueNode *node = q->first; (node->next != NULL); node = node->next)
                 {
                     if ((node->value->f <= weight) && (node->next->value->f > weight))
                     {
@@ -380,7 +403,7 @@ void enqueueStep(Step *step, StepQueue *q)
                         node->next = newNode;
                         newNode->next = aux;
                         q->size++;
-                        enqueued = true;
+                        return 2;
                     }
                 }
             }
@@ -390,6 +413,7 @@ void enqueueStep(Step *step, StepQueue *q)
             newNode->next = q->first;
             q->first = newNode;
             q->size++;
+            return 1;
         }
     }
     else
@@ -397,7 +421,9 @@ void enqueueStep(Step *step, StepQueue *q)
         q->first = newNode;
         q->last = newNode;
         q->size++;
+        return -1;
     }
+    return 0;
 }
 Step *dequeueStep(StepQueue *q)
 {
@@ -617,7 +643,10 @@ void printNodeMatrix(FieldNode ***board)
         printf("\n");
     }
 }
-void breakDebug()
+int breakDebug()
 {
+    static int i = 0;
     printf("DEU RUIM AQUI CARAIO");
+    i++;
+    return i;
 }

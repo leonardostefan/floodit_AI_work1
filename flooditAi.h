@@ -70,7 +70,7 @@ typedef struct StepQueue
 
 //Structures manipulation
 void expandNode(Step *step, int gameColors, StepQueue *q);
-void enqueueStep(Step *step, StepQueue *q);
+bool enqueueStep(Step *step, StepQueue *q);
 Step *dequeueStep(StepQueue *q);
 FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, int affectedSize, int totalNodes);
 // Setup inical dos nós
