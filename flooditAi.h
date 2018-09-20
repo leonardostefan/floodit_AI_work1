@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define bitColor  unsigned  long
+#define bitColor unsigned long
 #define bool char
 #define false 0
 #define true !false
@@ -43,7 +43,6 @@ typedef struct Step
     int f, g, h;
 } Step;
 
-
 typedef struct Board
 {
     int lines, columns;
@@ -73,14 +72,13 @@ typedef struct StepQueue
 void expandNode(Step *step, int gameColors, StepQueue *q);
 void enqueueStep(Step *step, StepQueue *q);
 Step *dequeueStep(StepQueue *q);
-FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, int totalNodes);
+FieldListNode *mergeNodes(FieldListNode *root, FieldListNode **affectedNodes, int affectedSize, int totalNodes);
 // Setup inical dos nós
 void searchNodes(int line, int column, FieldNode *groupNode, FieldNode ***board);
 void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode);
 FieldList *convertBoardToGraph(Board *boartM);
 
 void freeFieldList(FieldList *b);
-
 
 int *callback(Step *finalStep);
 

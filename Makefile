@@ -1,4 +1,4 @@
-FLAGS=  -Wall  -lm  -g 
+FLAGS=  -Wall  -lm  -g -O3
 CXX=gcc
 
 RM=rm -f

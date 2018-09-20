@@ -143,7 +143,7 @@ int main(int argc, char **argv)
     stepQueue->size = 0;
     Step* firstStep= calloc (1, sizeof(Step));
     firstStep->board = convertBoardToGraph(firstBoard);
-    printGraph(firstStep->board); 
+    // printGraph(firstStep->board); 
     firstStep->prevStep= NULL;
     firstStep->h=1;
     firstStep->f=1;
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
     char c;
     while (aux->h > 0){
         tester++;
-        printf("%d ", tester);
+        printf("\nNÓS EXPANDIDOS: %d ", tester);
 
         expandNode(aux, numColors, stepQueue);
         aux = dequeueStep( stepQueue);
