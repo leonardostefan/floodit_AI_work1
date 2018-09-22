@@ -301,17 +301,31 @@ int colorsCalculator(FieldList *fieldList, int gameColorsNumber)
 int h(FieldList *b, int numColors)
 {
     int size = b->size - 1;
-    int n = neighborsCalculator(b, numColors);
+    int n = neighborsCalculator(b, numColors)-1;
     int c = colorsCalculator(b, numColors) - 1;
 
-    if (c < 4)
-    {
-        return max(n, c);
+
+    if (b->size<=0 || c<=0 || n<=0){
+        if(b->size!=0 || c!=0 || n!=0)
+            breakDebug();
     }
-    else
-    {
-        return (c);
-    }
+
+    return n;
+    // if (c > 8)
+    // {
+    //     return size;
+    //     //return max(n, size);
+    // }
+    // else
+    // {
+    //     if(c>4){
+    //         return n;
+    //     }
+    //     else
+    //     {
+    //         return (c);
+    //     }
+    // }
 }
 int *callback(Step *finalStep)
 {
@@ -326,25 +340,25 @@ int *callback(Step *finalStep)
     return result;
 }
 //Structures
-void expandNode(Step *step, int gameColors, StepQueue *q)
+void expandNode(Step *eStep, int gameColors, StepQueue *q)
 {
     Step *newStep;
     bool isError = true;
     for (int i = 0; i < gameColors; i++)
     {
         int colorStep = i + 1;
-        if (colorStep != step->colorStep)
+        if (colorStep != eStep->colorStep)
         {
 
             newStep = calloc(1, sizeof(Step));
-            FieldList *newBoard = paintBoard(step->board, colorStep);
-            if (newBoard != NULL && (newBoard->size < step->board->size))
+            FieldList *newBoard = paintBoard(eStep->board, colorStep);
+            if (newBoard != NULL && (newBoard->size < eStep->board->size))
             {
 
                 newStep->board = newBoard;
-                newStep->prevStep = step;
+                newStep->prevStep = eStep;
                 newStep->colorStep = colorStep;
-                newStep->g = step->g + 1;
+                newStep->g = eStep->g + 1;
                 newStep->h = h(newStep->board, gameColors);
                 newStep->f = newStep->g + newStep->h;
                 bool eq = enqueueStep(newStep, q);
@@ -363,7 +377,7 @@ void expandNode(Step *step, int gameColors, StepQueue *q)
             }
             else
             {
-                if (newBoard != NULL && (newBoard->size >= step->board->size))
+                if (newBoard != NULL && (newBoard->size >= eStep->board->size))
                 {
                     breakDebug();
                 }
@@ -375,7 +389,7 @@ void expandNode(Step *step, int gameColors, StepQueue *q)
     {
         breakDebug();
     }
-    freeFieldList(step->board);
+    freeFieldList(eStep->board);
 }
 bool enqueueStep(Step *step, StepQueue *q)
 {
@@ -383,9 +397,9 @@ bool enqueueStep(Step *step, StepQueue *q)
     QueueNode *newNode = calloc(1, sizeof(QueueNode));
     newNode->value = step;
     if (q->size > 0)
-    {
+    {       //Se n vai ser o primeiro da lista
         if (q->first->value->f <= weight)
-        {
+        {   //se vai ser o ultimo da lista
             if (q->last->value->f <= weight)
             {
                 q->last->next = newNode;
@@ -393,6 +407,7 @@ bool enqueueStep(Step *step, StepQueue *q)
                 q->size++;
                 return 3;
             }
+            //se esta no meio da lista (nem primeiro, nem ultimo)
             else
             {
                 for (QueueNode *node = q->first; (node->next != NULL); node = node->next)
@@ -408,6 +423,7 @@ bool enqueueStep(Step *step, StepQueue *q)
                 }
             }
         }
+        //se vai ser o primeiro da lista
         else
         {
             newNode->next = q->first;
@@ -416,6 +432,7 @@ bool enqueueStep(Step *step, StepQueue *q)
             return 1;
         }
     }
+    //se a lista esta vazia
     else
     {
         q->first = newNode;
@@ -423,6 +440,7 @@ bool enqueueStep(Step *step, StepQueue *q)
         q->size++;
         return -1;
     }
+    //se nao enfileirou
     return 0;
 }
 Step *dequeueStep(StepQueue *q)
