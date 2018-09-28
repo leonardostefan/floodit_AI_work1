@@ -130,11 +130,14 @@ FieldList *paintBoard(FieldList *b, int nextColor)
                 isNotAffected = false;
             }
         }
-        if (isNotAffected)
+        if (isNotAffected && (b->list[id] != NULL))
         {
+
             newList->list[id] = calloc(1, sizeof(FieldNode));
+            newList->list[id]->color = b->list[id]->color;
             newList->realSize++;
         }
+
         else
         {
             newList->list[id] = NULL;
@@ -145,7 +148,8 @@ FieldList *paintBoard(FieldList *b, int nextColor)
     {
         if (newList->list[id] != NULL)
         {
-            newList->list[id]->neighborsId = calloc(b->list[id]->neighborsSize, sizeof(int));
+            newList->list[id]->neighborsId = calloc(b->list[id]->neighborsSize + 1, sizeof(int));
+            newList->list[id]->neighborsSize = 0;
             bool haveRoot = false;
             for (int n = 0; n < b->list[id]->neighborsSize; n++)
             {
@@ -167,9 +171,13 @@ FieldList *paintBoard(FieldList *b, int nextColor)
                     }
                 }
             }
+            if (newList->list[id]->neighborsSize > b->list[id]->neighborsSize )
+            {
+                breakDebug();
+                printf("Eita =(");
+            }
         }
     }
-
     printf("COLORIUS\n");
     return newList;
 }
@@ -255,7 +263,8 @@ FieldList *convertBoardToGraph(Board *boartM)
             }
         }
     }
-
+    printNodeMatrix(nodeBoard);
+    printGraph(resizedBoard);
     return resizedBoard;
 }
 void searchNodes(int line, int column, FieldNode *groupNode, FieldNode ***board)
@@ -343,25 +352,49 @@ void freeFieldList(FieldList *b)
 //Debug functions
 void printGraph(FieldList *grafo)
 {
-    for (int id = 0; id < grafo->size; id++)
+    printf("\n");
 
-    {
-        //printa
-        fprintf(stderr, "%p[%d]:", grafo->list[id], grafo->list[id]->color);
-        // for (int jd = 0; jd < grafo->list[id]->neighborsSize; jd++)
-        //     fprintf(stderr, " %p[%d]", grafo->list[jd]->neighbors[jd], grafo->list[jd]->neighbors[i]->color);
-        // fprintf(stderr, "\n");
-    }
+    char *cor_ansi[] = {"\x1b[0m",
+                        "\x1b[31m", "\x1b[32m", "\x1b[33m",
+                        "\x1b[34m", "\x1b[35m", "\x1b[36m",
+                        "\x1b[37m", "\x1b[30;1m", "\x1b[31;1m",
+                        "\x1b[32;1m", "\x1b[33;1m", "\x1b[34;1m",
+                        "\x1b[35;1m", "\x1b[36;1m", "\x1b[37;1m"};
+
+    for (int id = 0; id < grafo->size; id++)
+        if (grafo->list[id] != NULL)
+        {
+            int color = log(grafo->list[id]->color) / log(2);
+
+            printf("%s %x %s :{", cor_ansi[color], grafo->list[id], cor_ansi[0]);
+            for (int jd = 0; jd < grafo->list[id]->neighborsSize; jd++)
+            {
+                int n = grafo->list[id]->neighborsId[jd];
+                int nColor = log(grafo->list[n]->color) / log(2);
+                printf("%s %x %s", cor_ansi[nColor], grafo->list[n], cor_ansi[0]);
+            }
+            printf("}\n");
+        }
     printf("IMPRESSO\n");
 }
 
 void printNodeMatrix(FieldNode ***board)
 {
+    printf("\n");
+
+    char *cor_ansi[] = {"\x1b[0m",
+                        "\x1b[31m", "\x1b[32m", "\x1b[33m",
+                        "\x1b[34m", "\x1b[35m", "\x1b[36m",
+                        "\x1b[37m", "\x1b[30;1m", "\x1b[31;1m",
+                        "\x1b[32;1m", "\x1b[33;1m", "\x1b[34;1m",
+                        "\x1b[35;1m", "\x1b[36;1m", "\x1b[37;1m"};
+
     for (int i = 0; i < initaMatrixBoard->lines; i++)
     {
         for (int j = 0; j < initaMatrixBoard->columns; j++)
         {
-            printf(" %p", board[i][j]);
+            int color = log(board[i][j]->color) / log(2);
+            printf("%s %x %s", cor_ansi[color], board[i][j], cor_ansi[0]);
         }
         printf("\n");
     }
@@ -369,7 +402,7 @@ void printNodeMatrix(FieldNode ***board)
 int breakDebug()
 {
     static int i = 0;
-    // printf("DEU RUIM AQUI CARAIO");
+    printf(" DEU RUIM AQUI CARAIO\n");
     i++;
     return i;
 }

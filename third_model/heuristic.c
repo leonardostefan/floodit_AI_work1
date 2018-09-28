@@ -103,8 +103,7 @@ int setH(int *h, FieldList *b, int numColors)
     {
         if (size != 0 || c != 0 || n != 0)
         {
-            breakDebug();
-            printf("Falha na heuritica");
+            printf("\nFalha na heuritica\nsize==%d c==%d n==%d", size, c, n);
         }
     }
 
@@ -147,32 +146,40 @@ void expandNode(Step *eStep, int gameColors)
     for (int i = 0; i < gameColors; i++)
     {
         int colorStep = i + 1;
+        fprintf(stderr,"Cor: %d \n", colorStep);
         if (colorStep != eStep->colorStep)
         {
 
             newStep = calloc(1, sizeof(Step));
             FieldList *newBoard = paintBoard(eStep->board, colorStep);
-            if (newBoard != NULL && (newBoard->size < eStep->board->size))
+            fprintf(stderr,"\nTeste modificação...");
+            if (newBoard != NULL && (newBoard->realSize < eStep->board->realSize))
             {
-
+                fprintf(stderr,"entrou....\n");
                 newStep->board = newBoard;
                 newStep->prevStep = eStep;
                 newStep->colorStep = colorStep;
                 newStep->g = eStep->g + 1;
                 int queue = setH(&(newStep->h), newStep->board, gameColors);
                 newStep->f = newStep->g + newStep->h;
+
+                fprintf(stderr,"enfileirando...\n");
+
                 if (queue == 0)
                 {
                     enqueueStep(newStep, mainQueue);
+                    isError = false;
                 }
                 else
                 {
                     enqueueStep(newStep, secondQueue);
+                    isError = false;
                 }
             }
             else
             {
-                if (newBoard != NULL && (newBoard->size >= eStep->board->size))
+                printf("errow\n");
+                if (newBoard != NULL && (newBoard->realSize >= eStep->board->realSize))
                 {
                     breakDebug();
                 }
@@ -206,6 +213,8 @@ int *findSolution(Board *mainBoard, int numColors)
     Step *aux = firstStep;
     int expandedNodes = 0;
     expandNode(aux, numColors);
+    printGraph(aux->board);
+
     while (aux->h > 0)
     {
         if (secondQueue->size > 0)
@@ -216,6 +225,8 @@ int *findSolution(Board *mainBoard, int numColors)
         {
             aux = dequeueStep(mainQueue);
         }
+        printGraph(aux->board);
+        expandNode(aux, numColors);
         expandedNodes++;
         printf("\nNÓS EXPANDIDOS: %d ", expandedNodes);
     }
@@ -233,7 +244,10 @@ int *findSolution(Board *mainBoard, int numColors)
 bool enqueueStep(Step *step, StepQueue *q)
 {
     int weight = step->f;
-    QueueNode *newNode = calloc(1, sizeof(QueueNode));
+    fprintf(stderr,"É aqui!?...");
+    QueueNode *newNode = malloc(1 * sizeof(QueueNode));
+    fprintf(stderr,"é não");
+    newNode->next=0;
     newNode->value = step;
     if (q->size > 0)
     { //Se n vai ser o primeiro da lista
