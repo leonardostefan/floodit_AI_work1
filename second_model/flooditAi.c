@@ -87,9 +87,10 @@ FieldList *paintBoard(FieldList *b, int nextColor)
     {
         return NULL;
     }
+    // printf("\nColorindo\n");
 
     bool changeBoard = false;
-
+    // printf("Verificando nós afetados\n");
     FieldListNode **affectedNodes = calloc(b->size, sizeof(FieldListNode *));
     int affectedSize = 0;
     for (int i = 0; i < b->first->value->neighborsSize; i++)
@@ -114,8 +115,10 @@ FieldList *paintBoard(FieldList *b, int nextColor)
         {
             // free(affectedNodes);
         }
+        // printf("Nop...\n");
         return NULL;
     }
+    // printf("Remap\n");
     //Create nodes
     FieldListNode ***nodePairs = calloc(2, sizeof(FieldListNode **));
     nodePairs[0] = calloc(b->size, sizeof(FieldListNode *));
@@ -216,6 +219,7 @@ FieldList *paintBoard(FieldList *b, int nextColor)
         }
     }
     // printGraph(newBoard);
+    // printf("COLORIUS\n");
     return newBoard;
 }
 //Heuristc
@@ -247,7 +251,7 @@ int neighborsCalculator(FieldList *b, int gameColors)
             bool insert = true;
             for (int j = 0; j < colorGroups; j++)
             {
-                if ((colors[j] | newColors) == colors[j])
+                if ((newColors|colors[j]) == colors[j])
                 {
                     insert = false;
                     break;
@@ -301,31 +305,35 @@ int colorsCalculator(FieldList *fieldList, int gameColorsNumber)
 int h(FieldList *b, int numColors)
 {
     int size = b->size - 1;
-    int n = neighborsCalculator(b, numColors)-1;
+    int n = neighborsCalculator(b, numColors) - 1;
     int c = colorsCalculator(b, numColors) - 1;
-
-
-    if (b->size<=0 || c<=0 || n<=0){
-        if(b->size!=0 || c!=0 || n!=0)
+    int r=  sqrt(size*n);
+    if (size <= 0 || c <= 0 || n <= 0)
+    {
+        if (size != 0 || c != 0 || n != 0)
+        {
             breakDebug();
+            printf("Falha na heuritica");
+        }
     }
 
-    return n;
-    // if (c > 8)
-    // {
-    //     return size;
-    //     //return max(n, size);
-    // }
-    // else
-    // {
-    //     if(c>4){
-    //         return n;
-    //     }
-    //     else
-    //     {
-    //         return (c);
-    //     }
-    // }
+    // return size;
+    if (c > 8)
+    {
+        return n;
+        //return max(n, size);
+    }
+    else
+    {
+        if (c > 4)
+        {
+            return n;
+        }
+        else
+        {
+            return (n);
+        }
+    }
 }
 int *callback(Step *finalStep)
 {
@@ -397,9 +405,9 @@ bool enqueueStep(Step *step, StepQueue *q)
     QueueNode *newNode = calloc(1, sizeof(QueueNode));
     newNode->value = step;
     if (q->size > 0)
-    {       //Se n vai ser o primeiro da lista
+    { //Se n vai ser o primeiro da lista
         if (q->first->value->f <= weight)
-        {   //se vai ser o ultimo da lista
+        { //se vai ser o ultimo da lista
             if (q->last->value->f <= weight)
             {
                 q->last->next = newNode;
