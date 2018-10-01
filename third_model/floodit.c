@@ -144,13 +144,16 @@ FieldList *paintBoard(FieldList *b, int nextColor)
         }
     }
     //remmap
+    bool haveRoot;
     for (int id = 1; id < b->size; id++)
     {
+
         if (newList->list[id] != NULL)
         {
-            newList->list[id]->neighborsId = calloc(b->list[id]->neighborsSize + 1, sizeof(int));
-            newList->list[id]->neighborsSize = 0;
-            bool haveRoot = false;
+
+            int newNeighborsId = calloc(b->list[id]->neighborsSize + 1, sizeof(int));
+            int newNeighborsSize = 0;
+            haveRoot = false;
             for (int n = 0; n < b->list[id]->neighborsSize; n++)
             {
                 for (int a = 0; a < affectedSize; a++)
@@ -159,26 +162,36 @@ FieldList *paintBoard(FieldList *b, int nextColor)
                     {
                         if (!haveRoot)
                         {
-                            newList->list[id]->neighborsId[newList->list[id]->neighborsSize] = 0;
-                            newList->list[id]->neighborsSize++;
+                            newNeighborsId[newNeighborsSize] = 0;
+                            newNeighborsSize++;
                             haveRoot = true;
                         }
                     }
                     else
                     {
-                        newList->list[id]->neighborsId[newList->list[id]->neighborsSize] = b->list[id]->neighborsId[n];
-                        newList->list[id]->neighborsSize++;
+                        newNeighborsId[newNeighborsSize] = b->list[id]->neighborsId[n];
+                        newNeighborsSize++;
                     }
                 }
             }
+            newList->list[id]->neighborsId=newNeighborsId;
+            newList->list[id]->neighborsSize=newNeighborsSize;
+
+
             if (newList->list[id]->neighborsSize > b->list[id]->neighborsSize )
             {
                 breakDebug();
                 printf("Eita =(");
             }
         }
+ 
     }
+
+
+    
+    printGraph(newList);
     printf("COLORIUS\n");
+
     return newList;
 }
 
@@ -367,11 +380,11 @@ void printGraph(FieldList *grafo)
             int color = log(grafo->list[id]->color) / log(2);
 
             printf("%s %x %s :{", cor_ansi[color], grafo->list[id], cor_ansi[0]);
-            for (int jd = 0; jd < grafo->list[id]->neighborsSize; jd++)
+            for (int n = 0; n < grafo->list[id]->neighborsSize; n++)
             {
-                int n = grafo->list[id]->neighborsId[jd];
+                int nId = grafo->list[id]->neighborsId[n];
                 int nColor = log(grafo->list[n]->color) / log(2);
-                printf("%s %x %s", cor_ansi[nColor], grafo->list[n], cor_ansi[0]);
+                printf("%s %x %s", cor_ansi[nColor], grafo->list[nId], cor_ansi[0]);
             }
             printf("}\n");
         }
