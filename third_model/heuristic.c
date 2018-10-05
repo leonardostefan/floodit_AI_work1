@@ -5,6 +5,11 @@
 StepQueue *mainQueue;
 StepQueue *secondQueue;
 
+//*Globais para testes
+bool admissivel = true;
+bool consistente = true;
+//
+
 bitColor takeNeighbors(FieldNode *node, FieldList *b)
 {
     bitColor colors = empty;
@@ -55,6 +60,13 @@ int neighborsCalculator(FieldList *b, int gameColors)
                 }
             }
         }
+        else
+        {
+            insert = false;
+        }
+        DEBUG(if (b->realSize < colorGroups) {
+            breakDebug();
+        })
         if (insert)
         {
             colors[colorGroups] = newColors;
@@ -68,6 +80,13 @@ int neighborsCalculator(FieldList *b, int gameColors)
 int max(int a, int b)
 {
     if (a > b)
+        return a;
+    else
+        return b;
+}
+int min(int a, int b)
+{
+    if (a < b)
         return a;
     else
         return b;
@@ -94,29 +113,30 @@ int colorsCalculator(FieldList *fieldList, int gameColorsNumber)
 }
 int setH(int *h, FieldList *b, int numColors)
 {
-
+    static bool first = true;
     int size = b->realSize - 1;
     int n = neighborsCalculator(b, numColors) - 1;
     int c = colorsCalculator(b, numColors) - 1;
-
-    if (size <= 0 || c <= 0 || n <= 0)
-    {
+    int sqrtR = sqrt(size * n);
+    DEBUG_H(if (size <= 0 || c <= 0 || n <= 0) {
         if (size != 0 || c != 0 || n != 0)
         {
             printf("\nFalha na heuritica\nsize==%d c==%d n==%d", size, c, n);
         }
-    }
-
-    if (c > 8)
+    })
+    if (c > 7)
     {
-        *h = size;
+        *h = sqrtR;
         return 0;
     }
     else
     {
-        if (c > 4)
+        if (first)
+            DEBUG_H(fprintf(stderr, "\nNumero de nodos  c<7 : %d", size))
+        first = false;
+        if (c > 5)
         {
-            *h = n;
+            *h = sqrtR;
             return 1;
         }
         else
@@ -126,16 +146,45 @@ int setH(int *h, FieldList *b, int numColors)
         }
     }
 }
+
 int *callback(Step *finalStep)
 {
-
     int *result = calloc(finalStep->f + 1, sizeof(int));
     Step *aux = finalStep;
+    int teste = 0;
+    int *error = calloc(finalStep->f + 1, sizeof(int));
     for (int i = finalStep->f - 1; aux->prevStep != NULL; i--)
     {
+        teste++;
         result[i] = aux->colorStep;
+            error[i] = aux->f - finalStep->f;
+
         aux = aux->prevStep;
     }
+    {
+        int minE = __INT_MAX__;
+        int maxE = (-__INT_MAX__);
+        float md = 0;
+        float dp = 0;
+        int n = finalStep->f;
+        for (int i = n - 1; i >= 0; i--)
+        {
+            md += error[i];
+            maxE = max(maxE, error[i]);
+            minE = min(minE, error[i]);
+        }
+        md = md / n;
+        for (int i = n - 1; i >= 0; i--)
+        {
+            dp = (md - error[i]) * (md - error[i]);
+        }
+        dp = sqrt(dp / n);
+        printf("\nCallback: \nMaior erro: %d\nMenor: %d\nMédia: %f\nDesvio: %f\n", maxE, minE, md, dp);
+    }
+
+    DEBUG(if (finalStep->f < teste) {
+        breakDebug();
+    })
     return result;
 }
 
@@ -146,24 +195,24 @@ void expandNode(Step *eStep, int gameColors)
     for (int i = 0; i < gameColors; i++)
     {
         int colorStep = i + 1;
-        fprintf(stderr,"Cor: %d \n", colorStep);
+        DEBUG(fprintf(stderr, "Cor: %d \n", colorStep);)
         if (colorStep != eStep->colorStep)
         {
 
             newStep = calloc(1, sizeof(Step));
             FieldList *newBoard = paintBoard(eStep->board, colorStep);
-            fprintf(stderr,"\nTeste modificação...");
+            DEBUG(fprintf(stderr, "\nTeste modificação...");)
             if (newBoard != NULL && (newBoard->realSize < eStep->board->realSize))
             {
-                fprintf(stderr,"entrou....\n");
+                DEBUG(fprintf(stderr, "entrou....\n");)
                 newStep->board = newBoard;
                 newStep->prevStep = eStep;
                 newStep->colorStep = colorStep;
                 newStep->g = eStep->g + 1;
                 int queue = setH(&(newStep->h), newStep->board, gameColors);
-                newStep->f = newStep->g + newStep->h;
+                newStep->f =   newStep->g+ newStep->h;
 
-                fprintf(stderr,"enfileirando...\n");
+                DEBUG(fprintf(stderr, "enfileirando...\n");)
 
                 if (queue == 0)
                 {
@@ -174,24 +223,22 @@ void expandNode(Step *eStep, int gameColors)
                 {
                     enqueueStep(newStep, secondQueue);
                     isError = false;
-                }
+                } 
             }
             else
             {
-                printf("errow\n");
-                if (newBoard != NULL && (newBoard->realSize >= eStep->board->realSize))
-                {
-                    breakDebug();
-                }
-                freeFieldList(newBoard); //TODO freeFieldList
+                DEBUG(printf("errow\n");
+                      if (newBoard != NULL && (newBoard->realSize >= eStep->board->realSize)) {
+                          breakDebug();
+                      })
+                // freeFieldList(newBoard); //TODO freeFieldList
             }
         }
     }
-    if (isError)
-    {
-        breakDebug();
-    }
-    freeFieldList(eStep->board);
+    DEBUG(
+        if (isError) {
+            breakDebug();
+        }) // freeFieldList(eStep->board);
 }
 
 int *findSolution(Board *mainBoard, int numColors)
@@ -212,12 +259,14 @@ int *findSolution(Board *mainBoard, int numColors)
 
     Step *aux = firstStep;
     int expandedNodes = 0;
+    fprintf(stderr, "Nodos iniciais: %d", aux->board->realSize);
     expandNode(aux, numColors);
-    printGraph(aux->board);
+    // printGraph(aux->board);
+    bool startSecond = false;
 
     while (aux->h > 0)
     {
-        if (secondQueue->size > 0)
+        if (startSecond || secondQueue->size > 10)
         {
             aux = dequeueStep(secondQueue);
         }
@@ -225,14 +274,13 @@ int *findSolution(Board *mainBoard, int numColors)
         {
             aux = dequeueStep(mainQueue);
         }
-        printGraph(aux->board);
+        DEBUG(printGraph(aux->board);)
         expandNode(aux, numColors);
         expandedNodes++;
-        printf("\nNÓS EXPANDIDOS: %d ", expandedNodes);
+        DEBUG(printf("\nNÓS EXPANDIDOS: %d ", expandedNodes);)
     }
 
     int *result = callback(aux);
-
     printf("\nnumero de passos: %d\n", aux->f);
     for (int i = 0; i < aux->f; i++)
     {
@@ -244,10 +292,10 @@ int *findSolution(Board *mainBoard, int numColors)
 bool enqueueStep(Step *step, StepQueue *q)
 {
     int weight = step->f;
-    fprintf(stderr,"É aqui!?...");
+    DEBUG(fprintf(stderr, "É aqui!?...");)
     QueueNode *newNode = malloc(1 * sizeof(QueueNode));
-    fprintf(stderr,"é não");
-    newNode->next=0;
+    DEBUG(fprintf(stderr, "é não");)
+    newNode->next = 0;
     newNode->value = step;
     if (q->size > 0)
     { //Se n vai ser o primeiro da lista

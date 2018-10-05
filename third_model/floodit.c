@@ -3,15 +3,6 @@
 #include <time.h>
 #include "floodit.h"
 
-#define DEBUG 1
-#define inlineF
-// #define MAX_AFFECT_NODE 5
-
-//*Globais para testes
-bool admissivel = true;
-bool consistente = true;
-//
-
 Board *initaMatrixBoard;
 
 //Function to paint the first field meging the neighbors of the affected nodes(and painted node) to a new root node
@@ -64,10 +55,12 @@ FieldNode *mergeNodes(FieldNode *root, FieldNode **affectedNodes, int affectedSi
         }
     }
     // newNeighbors= reallocarray(newNeighbors, realSize , sizeof(FieldNode *));
-    if (totalNodes < realSize)
-    {
-        breakDebug();
-    }
+    DEBUG(
+        if (totalNodes < realSize) {
+            breakDebug();
+        }
+
+    )
 
     newRoot->neighborsId = newNeighbors;
     newRoot->neighborsSize = realSize;
@@ -85,10 +78,10 @@ FieldList *paintBoard(FieldList *b, int nextColor)
     {
         return NULL;
     }
-    printf("\nColorindo\n");
+    DEBUG(printf("\nColorindo\n");)
 
     bool changeBoard = false;
-    printf("Verificando nós afetados\n");
+    DEBUG(printf("Verificando nós afetados\n");)
     FieldNode **affectedNodes = calloc(b->realSize, sizeof(FieldNode *));
     int affectedSize = 0;
     for (int i = 0; i < b->list[0]->neighborsSize; i++)
@@ -102,16 +95,20 @@ FieldList *paintBoard(FieldList *b, int nextColor)
         }
     }
 
+    DEBUG(if (b->realSize < affectedSize) {
+        breakDebug();
+    })
+
     if (!changeBoard)
     {
         if (affectedNodes != NULL)
         {
             // free(affectedNodes);
         }
-        printf("Nop...\n");
+        DEBUG(printf("Nop...\n");)
         return NULL;
     }
-    printf("Remap\n");
+    DEBUG(printf("Remap\n");)
     //Create nodes
     FieldList *newList = calloc(1, sizeof(FieldList));
     newList->list = calloc(b->size, sizeof(FieldNode *));
@@ -123,18 +120,28 @@ FieldList *paintBoard(FieldList *b, int nextColor)
     for (int id = 1; id < b->size; id++)
     {
         bool isNotAffected = true;
-        for (int i = 0; i < affectedSize; i++)
+        if (b->list[id] != NULL)
         {
-            if (b->list[id] == affectedNodes[i])
+
+            for (int i = 0; i < affectedSize; i++)
             {
-                isNotAffected = false;
+                if (b->list[id]->id == affectedNodes[i]->id)
+                {
+                    isNotAffected = false;
+                }
             }
         }
+        else
+        {
+            isNotAffected = false;
+        }
+
         if (isNotAffected && (b->list[id] != NULL))
         {
 
             newList->list[id] = calloc(1, sizeof(FieldNode));
             newList->list[id]->color = b->list[id]->color;
+            newList->list[id]->id = b->list[id]->id;
             newList->realSize++;
         }
 
@@ -143,6 +150,7 @@ FieldList *paintBoard(FieldList *b, int nextColor)
             newList->list[id] = NULL;
         }
     }
+
     //remmap
     bool haveRoot;
     for (int id = 1; id < b->size; id++)
@@ -151,15 +159,17 @@ FieldList *paintBoard(FieldList *b, int nextColor)
         if (newList->list[id] != NULL)
         {
 
-            int newNeighborsId = calloc(b->list[id]->neighborsSize + 1, sizeof(int));
+            int *newNeighborsId = calloc(b->list[id]->neighborsSize + 1, sizeof(int));
             int newNeighborsSize = 0;
             haveRoot = false;
             for (int n = 0; n < b->list[id]->neighborsSize; n++)
             {
+                bool insert = true;
                 for (int a = 0; a < affectedSize; a++)
                 {
                     if ((b->list[id]->neighborsId[n] == affectedNodes[a]->id || b->list[id]->neighborsId[n] == 0))
                     {
+                        insert = false;
                         if (!haveRoot)
                         {
                             newNeighborsId[newNeighborsSize] = 0;
@@ -167,31 +177,25 @@ FieldList *paintBoard(FieldList *b, int nextColor)
                             haveRoot = true;
                         }
                     }
-                    else
-                    {
-                        newNeighborsId[newNeighborsSize] = b->list[id]->neighborsId[n];
-                        newNeighborsSize++;
-                    }
+                }
+
+                if (insert)
+                {
+                    newNeighborsId[newNeighborsSize] = b->list[id]->neighborsId[n];
+                    newNeighborsSize++;
                 }
             }
-            newList->list[id]->neighborsId=newNeighborsId;
-            newList->list[id]->neighborsSize=newNeighborsSize;
+            newList->list[id]->neighborsId = newNeighborsId;
+            newList->list[id]->neighborsSize = newNeighborsSize;
 
-
-            if (newList->list[id]->neighborsSize > b->list[id]->neighborsSize )
-            {
+            DEBUG(if (newList->list[id]->neighborsSize > b->list[id]->neighborsSize) {
                 breakDebug();
-                printf("Eita =(");
-            }
+            })
         }
- 
     }
-
-
-    
-    printGraph(newList);
-    printf("COLORIUS\n");
-
+    DEBUG(
+        printGraph(newList);
+        printf("COLORIUS\n");)
     return newList;
 }
 
@@ -276,8 +280,8 @@ FieldList *convertBoardToGraph(Board *boartM)
             }
         }
     }
-    printNodeMatrix(nodeBoard);
-    printGraph(resizedBoard);
+    DEBUG(printNodeMatrix(nodeBoard);
+          printGraph(resizedBoard);)
     return resizedBoard;
 }
 void searchNodes(int line, int column, FieldNode *groupNode, FieldNode ***board)
@@ -331,7 +335,7 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode, int totalNodes)
         else
         {
             searchNode->neighborsSize = 1;
-            searchNode->neighborsId = calloc(totalNodes, sizeof(FieldNode *));
+            searchNode->neighborsId = calloc(totalNodes, sizeof(int));
             searchNode->neighborsId[0] = toLinkNode->id;
             // printf("%p -> %p \n", searchNode, toLinkNode );
         }
@@ -383,7 +387,7 @@ void printGraph(FieldList *grafo)
             for (int n = 0; n < grafo->list[id]->neighborsSize; n++)
             {
                 int nId = grafo->list[id]->neighborsId[n];
-                int nColor = log(grafo->list[n]->color) / log(2);
+                int nColor = log(grafo->list[nId]->color) / log(2);
                 printf("%s %x %s", cor_ansi[nColor], grafo->list[nId], cor_ansi[0]);
             }
             printf("}\n");
@@ -415,7 +419,7 @@ void printNodeMatrix(FieldNode ***board)
 int breakDebug()
 {
     static int i = 0;
-    printf(" DEU RUIM AQUI CARAIO\n");
+    // printf(" DEU RUIM AQUI CARAIO\n");
     i++;
     return i;
 }

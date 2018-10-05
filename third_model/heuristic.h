@@ -7,13 +7,15 @@
 
 #ifndef __heuristc__
 #define __heuristc__
+#define DEBUG_H(A) A;
+#define kG (80/100)
 typedef struct Step
 {
     FieldList *board;
     struct Step *prevStep;
     struct Step **nextSteps;
     int colorStep;
-    int f, g, h;
+    double f, g, h;
 } Step;
 
 typedef struct QueueNode

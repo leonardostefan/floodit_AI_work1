@@ -8,11 +8,9 @@
 #define bool char
 #define false 0
 #define true !false
+#define DEBUG(A) ;
 
 #define empty 0
-#define toBitColor(A) \
-    1 << A;           \
-    ;
 
 typedef struct FieldNode
 {
@@ -24,7 +22,8 @@ typedef struct FieldNode
 
 typedef struct FieldList
 {
-    int size, realSize;
+    int size;
+    int realSize;
     FieldNode **list;
 
 } FieldList;
