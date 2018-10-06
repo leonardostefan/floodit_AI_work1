@@ -15,7 +15,7 @@ typedef struct Step
     struct Step *prevStep;
     struct Step **nextSteps;
     int colorStep;
-    double f, g, h;
+    int f, g, h;
 } Step;
 
 typedef struct QueueNode

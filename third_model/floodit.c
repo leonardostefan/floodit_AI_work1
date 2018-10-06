@@ -103,7 +103,7 @@ FieldList *paintBoard(FieldList *b, int nextColor)
     {
         if (affectedNodes != NULL)
         {
-            // free(affectedNodes);
+            free(affectedNodes);
         }
         DEBUG(printf("Nop...\n");)
         return NULL;
@@ -344,26 +344,25 @@ void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode, int totalNodes)
 
 void freeFieldList(FieldList *b)
 {
-    // if (b != NULL)
-    // {
+    if (b != NULL)
+    {
 
-    //     if (b->first != NULL)
-    //     {
-    //         FieldListNode *lastNode = NULL;
-    //         for (FieldListNode *node = b->first; node->next != NULL; node = node->next)
-    //         {
-    //             if (lastNode != NULL)
-    //             {
-    //                 if (lastNode->value->neighbors != NULL)
-
-    //                     free(lastNode->value->neighbors);
-    //                 free(lastNode->value);
-    //                 free(lastNode);
-    //             }
-    //             lastNode = node;
-    //         }
-    //     }
-    // }
+        if (b->list != NULL)
+        {
+            for (int id = 0; id < b->size; id++)
+            {
+                if (b->list[id] != NULL)
+                {
+                    if (b->list[id]->neighborsId != NULL)
+                    {
+                        free(b->list[id]->neighborsId);
+                    }
+                    free(b->list[id]);
+                }
+            }
+        }
+        free(b);
+    }
 }
 
 //Debug functions

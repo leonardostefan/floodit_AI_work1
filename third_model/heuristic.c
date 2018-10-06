@@ -32,10 +32,11 @@ bitColor takeNeighbors(FieldNode *node, FieldList *b)
 }
 int neighborsCalculator(FieldList *b, int gameColors)
 {
+
     bitColor *colors = calloc(b->realSize, sizeof(colors));
     int colorGroups = 0;
-
-    for (int id = 0; id < b->size; id++)
+    int r = 0;
+    for (int id = 1; id < b->size; id++)
     {
         bool insert = true;
         bitColor newColors;
@@ -51,11 +52,20 @@ int neighborsCalculator(FieldList *b, int gameColors)
                 }
                 else
                 {
-                    if ((colors[j] | newColors) == newColors)
+                    bitColor unionColor = colors[j] | newColors;
+                    if (unionColor == newColors)
                     {
                         insert = false;
                         colors[j] = newColors;
                         break;
+                    }
+                    else
+                    {
+                        if (unionColor == colors[j])
+                        {
+                            insert = false;
+                            break;
+                        }
                     }
                 }
             }
@@ -67,14 +77,22 @@ int neighborsCalculator(FieldList *b, int gameColors)
         DEBUG(if (b->realSize < colorGroups) {
             breakDebug();
         })
+
         if (insert)
         {
             colors[colorGroups] = newColors;
             colorGroups++;
         }
     }
-    // TODO free colors, free bitColor
-    return colorGroups;
+    // for(int i=0; i<colorGroups;i++){
+    //     for (int j=0; j<gameColors;j++){
+    //         if((colors[i]>>j)%2){
+    //             r++;
+    //         }
+    //     }
+    // }
+    free(colors);
+    return (colorGroups);
 }
 
 int max(int a, int b)
@@ -115,7 +133,7 @@ int setH(int *h, FieldList *b, int numColors)
 {
     static bool first = true;
     int size = b->realSize - 1;
-    int n = neighborsCalculator(b, numColors) - 1;
+    int n = neighborsCalculator(b, numColors);
     int c = colorsCalculator(b, numColors) - 1;
     int sqrtR = sqrt(size * n);
     DEBUG_H(if (size <= 0 || c <= 0 || n <= 0) {
@@ -124,27 +142,34 @@ int setH(int *h, FieldList *b, int numColors)
             printf("\nFalha na heuritica\nsize==%d c==%d n==%d", size, c, n);
         }
     })
-    if (c > 7)
+    int kN = 4, kSize = 1;
+
+    // *h = n;
+    // return 0;
+    if (size * c * c > (4*4*200))
     {
-        *h = sqrtR;
-        return 0;
+        *h = (kN * n + kSize * size) / (kN + kSize);
     }
     else
     {
         if (first)
-            DEBUG_H(fprintf(stderr, "\nNumero de nodos  c<7 : %d", size))
         first = false;
-        if (c > 5)
+        if (size * c * c > 1600)
         {
             *h = sqrtR;
-            return 1;
         }
         else
         {
             *h = (n);
-            return 1;
         }
     }
+    if (size < 1000 && c < 8)
+    {
+            DEBUG_H(fprintf(stderr, "\nNumero de nodos  c<7 : %d", size))
+        return 1;
+    }
+    else
+        return 0;
 }
 
 int *callback(Step *finalStep)
@@ -152,31 +177,30 @@ int *callback(Step *finalStep)
     int *result = calloc(finalStep->f + 1, sizeof(int));
     Step *aux = finalStep;
     int teste = 0;
-    int *error = calloc(finalStep->f + 1, sizeof(int));
+    float *error = calloc(finalStep->f + 1, sizeof(float));
+    float md = 0;
     for (int i = finalStep->f - 1; aux->prevStep != NULL; i--)
     {
         teste++;
         result[i] = aux->colorStep;
-            error[i] = aux->f - finalStep->f;
-
+        error[i] = aux->f - finalStep->f;
+        md += error[i];
         aux = aux->prevStep;
     }
     {
         int minE = __INT_MAX__;
         int maxE = (-__INT_MAX__);
-        float md = 0;
         float dp = 0;
         int n = finalStep->f;
-        for (int i = n - 1; i >= 0; i--)
-        {
-            md += error[i];
-            maxE = max(maxE, error[i]);
-            minE = min(minE, error[i]);
-        }
         md = md / n;
         for (int i = n - 1; i >= 0; i--)
         {
+            maxE = max(maxE, error[i]);
+            minE = min(minE, error[i]);
             dp = (md - error[i]) * (md - error[i]);
+        }
+        for (int i = n - 1; i >= 0; i--)
+        {
         }
         dp = sqrt(dp / n);
         printf("\nCallback: \nMaior erro: %d\nMenor: %d\nMédia: %f\nDesvio: %f\n", maxE, minE, md, dp);
@@ -210,7 +234,7 @@ void expandNode(Step *eStep, int gameColors)
                 newStep->colorStep = colorStep;
                 newStep->g = eStep->g + 1;
                 int queue = setH(&(newStep->h), newStep->board, gameColors);
-                newStep->f =   newStep->g+ newStep->h;
+                newStep->f = newStep->g + newStep->h;
 
                 DEBUG(fprintf(stderr, "enfileirando...\n");)
 
@@ -223,7 +247,7 @@ void expandNode(Step *eStep, int gameColors)
                 {
                     enqueueStep(newStep, secondQueue);
                     isError = false;
-                } 
+                }
             }
             else
             {
@@ -231,14 +255,15 @@ void expandNode(Step *eStep, int gameColors)
                       if (newBoard != NULL && (newBoard->realSize >= eStep->board->realSize)) {
                           breakDebug();
                       })
-                // freeFieldList(newBoard); //TODO freeFieldList
+                freeFieldList(newBoard); //TODO freeFieldList
             }
         }
     }
     DEBUG(
         if (isError) {
             breakDebug();
-        }) // freeFieldList(eStep->board);
+        })
+    freeFieldList(eStep->board);
 }
 
 int *findSolution(Board *mainBoard, int numColors)
@@ -266,7 +291,7 @@ int *findSolution(Board *mainBoard, int numColors)
 
     while (aux->h > 0)
     {
-        if (startSecond || secondQueue->size > 10)
+        if (startSecond || secondQueue->size > 10 || mainQueue->size<1)
         {
             aux = dequeueStep(secondQueue);
         }
