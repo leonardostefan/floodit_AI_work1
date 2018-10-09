@@ -1,4 +1,4 @@
-FLAGS=  -Wall  -lm  -O3 -fopenmp -pg
+FLAGS=  -Wall  -lm  -O3 
 CXX=gcc
 
 RM=rm -f

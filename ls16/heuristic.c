@@ -30,7 +30,6 @@ int neighborsCalculator(FieldList *b, int gameColors)
 {
     bitColor *colors = calloc(b->realSize, sizeof(colors));
     int colorGroups = 0;
-    int r = 0;
     for (int id = 1; id < b->size; id++)
     {
         bool insert = true;
@@ -124,7 +123,6 @@ int dijkstra(FieldList *b)
                 }
             }
             FieldNode *selecetdNode = b->list[minId];
-
             for (int n = 0; n < selecetdNode->neighborsSize; n++)
             {
                 int id = selecetdNode->neighborsId[n];
@@ -178,12 +176,10 @@ int colorsCalculator(FieldList *fieldList, int gameColorsNumber)
 }
 int setH(int *h, FieldList *b, int numColors)
 {
-    static bool first = true;
     int size = b->realSize - 1;
     int c = colorsCalculator(b, numColors) - 1;
-    int kN = 8, kSize = 1;
 
-    if (timeSpent() < 0)
+    if (timeSpent() > warningTime)
     {
         *h = sqrt(size * c);
     }
@@ -192,13 +188,10 @@ int setH(int *h, FieldList *b, int numColors)
         int d = dijkstra(b);
         int adm = max(d, c);
         int sqrtR = sqrt(size * adm);
-        // if (size < 6000)
-        // {
+        if(size<6000){
 
-        //     *h = sqrt(sqrtR * adm);
-        // }
-        // else
-        {
+        *h = sqrt(sqrtR * adm);
+        }else{
             *h = sqrtR;
         }
     }
@@ -217,7 +210,7 @@ int *callback(Step *finalStep)
     int *result = calloc(finalStep->f + 1, sizeof(int));
     Step *aux = finalStep;
     float *error = calloc(finalStep->f + 1, sizeof(float));
-    float md = 0;
+    DEBUG_H(float md = 0;)
     for (int i = finalStep->f - 1; aux->prevStep != NULL; i--)
     {
         result[i] = aux->colorStep;
@@ -255,7 +248,6 @@ void expandNode(Step *eStep, int gameColors)
 {
 
     Step *newStep;
-    bool isError = true;
     for (int i = 0; i < gameColors; i++)
     {
         int colorStep = i + 1;
@@ -271,7 +263,7 @@ void expandNode(Step *eStep, int gameColors)
             {
                 if ((timeSpent() < warningTime) && ((eStep->board->size) / (eStep->board->realSize)) > 1.2 && eStep->board->size > 100)
                 {
-                    DEBUG({ fprintf(stderr, "\nredução   %d->%d \n", (eStep->board->size), (eStep->board->realSize)); })
+                    DEBUG({fprintf(stderr, "\nredução   %d->%d \n", (eStep->board->size), (eStep->board->realSize));})
                     newBoard = reduceGraph(newBoard);
                 }
                 DEBUG(fprintf(stderr, "entrou....\n");)
@@ -287,7 +279,6 @@ void expandNode(Step *eStep, int gameColors)
                 if (queue == 0)
                 {
                     enqueueStep(newStep, mainQueue);
-                    isError = false;
                 }
                 else
                 {
@@ -296,7 +287,6 @@ void expandNode(Step *eStep, int gameColors)
                         enqueueStep(newStep, mainQueue);
                     }
                     enqueueStep(newStep, secondQueue);
-                    isError = false;
                 }
             }
             else
@@ -309,17 +299,12 @@ void expandNode(Step *eStep, int gameColors)
             }
         }
     }
-    DEBUG(
-        if (isError) {
-            breakDebug();
-        })
+    
     freeFieldList(eStep->board);
 }
 
 int *findSolution(Board *mainBoard, int numColors)
 {
-    numProcs = omp_get_num_procs();
-
     initalTime = time(NULL);
     mainQueue = calloc(1, sizeof(StepQueue));
     mainQueue->size = 0;
@@ -336,9 +321,8 @@ int *findSolution(Board *mainBoard, int numColors)
 
     Step *aux = firstStep;
     int expandedNodes = 0;
-    DEBUG({ fprintf(stderr, "Nodos iniciais: %d\n", aux->board->realSize); })
+    DEBUG({fprintf(stderr, "Nodos iniciais: %d\n", aux->board->realSize);})
     expandNode(aux, numColors);
-    bool startSecond = false;
 
     while (aux->h > 0)
     {
@@ -356,8 +340,9 @@ int *findSolution(Board *mainBoard, int numColors)
         DEBUG(printf("\nNÓS EXPANDIDOS: %d ", expandedNodes);)
     }
 
+    
     int *result = callback(aux);
-    DEBUG({ printf("\nnumero de passos: "); })
+    DEBUG({printf("\nnumero de passos: ");})
     printf("%d\n", aux->f);
     for (int i = 0; i < aux->f; i++)
     {

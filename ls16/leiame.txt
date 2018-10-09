@@ -1,0 +1,19 @@
+Trabalho 1 de IA
+Aluno: Leonardo Stefan (ls16)
+GRR20163052
+
+
+Arquivos:
+
+main.c:
+ Gera/le tabuleiro e chama os métodos de solução
+
+heuristic.c/.h:
+ Algoritimos que geram uma solução para o tabuleiro usando A*, e tendo como heuristica o menor maior caminho (dijkstra) e a quantidade de nós no tabuleiro
+
+floodit.c/.h:
+ manipulação do tabuleiro, transformação de matriz para grafo, pinta tabuleiro...
+ 
+ Makefile:
+    make - compila com -O3 o main e suas dependencias
+    make clean -  remove compilados

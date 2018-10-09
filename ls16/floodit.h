@@ -3,7 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
-#include<time.h>
+#include <time.h>
 
 #define bitColor unsigned long
 #define bool char
@@ -35,23 +35,21 @@ typedef struct Board
     int **fields;
 } Board;
 
-FieldNode *mergeNodes(FieldNode *root, FieldNode **affectedNodes, int affectedSize, int totalNodes);
+//Pintura dos nós
 FieldList *paintBoard(FieldList *b, int nextColor);
+//União/pintura do primeiro nó com nós afetados
+FieldNode *mergeNodes(FieldNode *root, FieldNode **affectedNodes, int affectedSize, int totalNodes);
 
 // Setup inical dos nós
+FieldList *convertBoardToGraph(Board *boartM); //Gera grafo a partir da matriz
 void searchNodes(int line, int column, FieldNode *groupNode, FieldNode ***board);
 void linkNeighbors(FieldNode *searchNode, FieldNode *toLinkNode, int totalNodes);
-FieldList *convertBoardToGraph(Board *boartM);
-FieldList *reduceGraph(FieldList* b);
-void freeFieldList(FieldList *b);
-int breakDebug();
 
-// void freeMatrix(void **m, int lines);
-// //Find result
-// int colorsCalculator(BoardList *b, int gameColors);
-// int neighborCalculator(BoardList *b, int numColors);
-// void searchField(Neighbor *neighbor, Board *b, int line, int column, bool **checkedField);
-// int h(Board *b, int numColors, int currentNumColors);
-// int *callback(Step *finalStep);
+//Redução da memória gasta para representar o mesmo grafo
+FieldList *reduceGraph(FieldList *b);
+
+void freeFieldList(FieldList *b);
+
+int breakDebug(); //para debug
 
 #endif
